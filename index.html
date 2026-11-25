@@ -438,6 +438,36 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
 .day-h .num{text-transform:none}
 .nav.four{grid-template-columns:repeat(4,1fr)}
 .nav .fab[hidden]{display:none!important}
+/* hero swipe: Total aset ↔ Investasi */
+.hero-swipe{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px;scroll-padding:0 16px;outline:none}
+.hero-swipe::-webkit-scrollbar{display:none}
+.hero-swipe .slide{flex:0 0 100%;min-width:0;scroll-snap-align:center;margin-bottom:0}
+.hero.inv{background:linear-gradient(155deg,#5A5634 0%,#34321E 80%)}
+[data-theme="dark"] .hero.inv{background:linear-gradient(155deg,#4A4730 0%,#26251A 80%)}
+.hero-dots{display:flex;justify-content:center;gap:6px;margin:8px 0 12px}
+.hero-dots button{width:7px;height:7px;border-radius:99px;background:var(--line);padding:0;transition:width .2s}
+.hero-dots button.on{width:20px;background:var(--acc)}
+.inv-sub{font-size:13px;color:#DCE4D4;margin:-4px 0 6px}
+.inv-sub .up,.pg.up{color:#CDE6A8} .inv-sub .down,.pg.down{color:#F2A58C}
+.pv-wrap{display:flex;flex-direction:column;align-items:flex-end}
+.pg{font-size:11.5px;font-weight:700}
+.igain{font-weight:700;margin:10px 2px 4px}
+.cc-hint{background:color-mix(in srgb,var(--lime) 18%,var(--surface));border:1px solid color-mix(in srgb,var(--lime) 50%,var(--line));color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13px;margin:0 0 10px;line-height:1.4}
+#cardList .bud-foot{align-items:center}
+#cardList .pay{margin-left:8px}
+/* pindah saldo */
+.hero-acts{display:flex;gap:6px}
+.amt.tf{color:var(--muted)!important}
+.tf-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:10px}
+.tf-swap{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:16px;font-weight:700}
+.tf-fee{border:1px dashed var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.tf-check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}
+.tf-check input{width:18px;height:18px;accent-color:var(--acc)}
+.tf-check small{color:var(--muted);font-weight:500}
+.tf-feein{margin:10px 0 8px}
+.tf-feein input{font-size:20px}
+#tFeeQuick{justify-content:flex-start;margin:0}
+.tf-sum{min-height:18px}
 </style>
 </head>
 <body>
@@ -455,20 +485,46 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <button class="avatar" data-go="settings" id="avatar" aria-label="Akun dan pengaturan">D</button>
     </div>
 
-    <div class="hero">
+    <div class="hero-swipe" id="heroSwipe" tabindex="0" aria-label="Geser untuk melihat Investasi">
+      <div class="hero slide" id="slideAset">
       <div class="hero-top">
         <div class="hero-lbl">Total aset
           <button class="eye" id="eyeBtn" type="button" aria-label="Sembunyikan nominal"></button>
         </div>
+        <div class="hero-acts">
+        <button class="hero-add" id="movePocketBtn" type="button" aria-label="Pindah saldo antar pocket" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>Pindah
+        </button>
         <button class="hero-add" id="addPocketBtn" type="button" aria-label="Tambah pocket">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Pocket
         </button>
+        </div>
       </div>
       <div class="hero-big num money" id="heroAset">Rp0</div>
       <button class="pocket-toggle" id="pocketToggle" type="button" aria-expanded="false" aria-controls="pocketList">
         <span id="pocketToggleTxt">0 pocket</span><span class="pt-ic" aria-hidden="true">▾</span>
       </button>
       <div class="pocket-list" id="pocketList" hidden></div>
+      </div>
+
+      <div class="hero slide inv" id="slideInv">
+        <div class="hero-top">
+          <div class="hero-lbl">Investasi</div>
+          <button class="hero-add" id="addInvBtn" type="button" aria-label="Tambah investasi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Investasi
+          </button>
+        </div>
+        <div class="hero-big num money" id="invTotal">Rp0</div>
+        <div class="inv-sub money" id="invSub"></div>
+        <button class="pocket-toggle" id="invToggle" type="button" aria-expanded="false" aria-controls="invList">
+          <span id="invToggleTxt">0 investasi</span><span class="pt-ic" aria-hidden="true">▾</span>
+        </button>
+        <div class="pocket-list" id="invList" hidden></div>
+      </div>
+    </div>
+    <div class="hero-dots" id="heroDots">
+      <button type="button" class="on" aria-label="Total aset" aria-current="true"></button>
+      <button type="button" aria-label="Investasi" aria-current="false"></button>
     </div>
 
     <div class="tiles">
@@ -511,6 +567,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <button class="chip" data-kind="daily">Pengeluaran</button>
       <button class="chip" data-kind="fixed">Tagihan</button>
       <button class="chip" data-kind="debt">Cicilan</button>
+      <button class="chip" data-kind="transfer">Pindah</button>
     </div>
     <div id="txList"></div>
   </section>
@@ -645,6 +702,59 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   </div>
 </form>
 
+<!-- investasi sheet -->
+<form class="sheet" id="isheet" role="dialog" aria-modal="true" aria-labelledby="iTitle">
+  <div class="grab"></div>
+  <h3><span id="iTitle">Tambah Investasi</span><button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h3>
+  <div class="field-lbl">Nama</div>
+  <input class="input" id="iName" maxlength="40" placeholder="mis. Reksa Dana Bibit, Emas Antam, BBCA" style="margin-bottom:14px">
+  <div class="field-lbl">Jenis</div>
+  <div class="wchips" id="iTypes"></div>
+  <div class="grid2">
+    <div class="amount-box" style="margin:0"><label for="iCost">Modal disetor</label><div class="amount-row"><span>Rp</span><input id="iCost" class="num" inputmode="numeric" placeholder="0" autocomplete="off" style="font-size:22px"></div></div>
+    <div class="amount-box" style="margin:0"><label for="iValue">Nilai sekarang</label><div class="amount-row"><span>Rp</span><input id="iValue" class="num" inputmode="numeric" placeholder="0" autocomplete="off" style="font-size:22px"></div></div>
+  </div>
+  <p class="hint igain" id="iGain"></p>
+  <p class="hint">Perbarui "Nilai sekarang" kapan saja untuk melihat untung atau rugi. Investasi tidak mengubah saldo pocket.</p>
+  <div class="sheet-actions">
+    <button type="button" class="btn danger" id="iDel" hidden>Hapus</button>
+    <button type="submit" class="btn primary" id="iSave">Simpan</button>
+  </div>
+</form>
+
+<!-- pindah saldo -->
+<form class="sheet" id="tsheet" role="dialog" aria-modal="true" aria-labelledby="tTitle">
+  <div class="grab"></div>
+  <h3><span id="tTitle">Pindah Saldo</span><button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h3>
+  <div class="amount-hero"><span class="rp">Rp</span><input id="tAmt" class="num" inputmode="numeric" placeholder="0" autocomplete="off" aria-label="Nominal dipindah"></div>
+  <div class="tf-pair">
+    <label class="sel"><small>Dari</small><select id="tFrom" aria-label="Pocket asal"></select></label>
+    <button type="button" class="tf-swap" id="tSwap" aria-label="Tukar asal dan tujuan">⇅</button>
+    <label class="sel"><small>Ke</small><select id="tTo" aria-label="Pocket tujuan"></select></label>
+  </div>
+  <div id="tFeeBox" class="tf-fee" hidden>
+    <label class="tf-check"><input type="checkbox" id="tFeeOn"> <span>Ada biaya admin <small>(e-wallet)</small></span></label>
+    <div id="tFeeRow" hidden>
+      <div class="amount-row tf-feein"><span>Rp</span><input id="tFee" class="num" inputmode="numeric" placeholder="0" autocomplete="off" aria-label="Biaya admin"></div>
+      <div class="quick" id="tFeeQuick">
+        <button type="button" data-fee="1000">1.000</button>
+        <button type="button" data-fee="1500">1.500</button>
+        <button type="button" data-fee="2500">2.500</button>
+        <button type="button" data-fee="6500">6.500</button>
+      </div>
+    </div>
+  </div>
+  <div class="selrow">
+    <label class="sel"><small>Catatan (opsional)</small><input id="tNote" maxlength="120" placeholder="mis. Top up GoPay"></label>
+    <label class="sel"><small>Tanggal</small><input id="tDate" type="date" required aria-label="Tanggal"></label>
+  </div>
+  <p class="hint tf-sum" id="tSum"></p>
+  <div class="sheet-actions">
+    <button type="button" class="btn danger" id="tDel" hidden>Hapus</button>
+    <button type="submit" class="btn primary">Pindahkan</button>
+  </div>
+</form>
+
 <!-- pocket sheet -->
 <form class="sheet" id="wsheet" role="dialog" aria-modal="true" aria-labelledby="wTitle">
   <div class="grab"></div>
@@ -658,6 +768,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     <div class="amount-row"><span>Rp</span><input id="wBal" class="mono" inputmode="numeric" placeholder="0" autocomplete="off"></div>
   </div>
   <p class="hint" id="wHint"></p>
+  <button type="button" class="note-btn" id="wMove" hidden>⇄ Pindahkan saldo ke pocket lain</button>
   <div class="sheet-actions">
     <button type="button" class="btn danger" id="wDel" hidden>Hapus</button>
     <button type="submit" class="btn primary" id="wSave">Simpan</button>
@@ -749,7 +860,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const FIXED_CAT = "Pengeluaran Tetap", DEBT_CAT = "Cicilan Hutang";
   const ICONS = {"Makan & Minum":"🍜","Transportasi":"🛵","Tagihan":"🧾","Belanja":"🛍️","Hiburan":"🎬","Kesehatan":"💊","Lainnya":"📦",
     "Gaji":"💼","Bonus":"✨","Hadiah":"🎁","Pendidikan":"📚","Rumah":"🏠","Tabungan":"🐷","Sedekah":"🤲","Kopi":"☕","Pulsa & Internet":"📶",
-    [FIXED_CAT]:"📌",[DEBT_CAT]:"💳"};
+    [FIXED_CAT]:"📌",[DEBT_CAT]:"💳","Biaya Admin":"🏧","Pindah Saldo":"🔁"};
   const FIXED_ICONS = [[/kos|sewa|kontrak|rumah|kpr|apartemen/i,"🏠"],[/internet|wifi|indihome|pulsa|paket data/i,"📶"],[/listrik|pln|token/i,"⚡"],
     [/air|pdam/i,"🚰"],[/bpjs|asuransi|kesehatan/i,"🛡️"],[/spotify|netflix|youtube|langganan|subscri|disney/i,"🎵"],
     [/sekolah|kuliah|spp|les/i,"📚"],[/gym|fitness/i,"🏋️"],[/orang ?tua|ortu|keluarga/i,"👪"],[/tabung|invest|reksa/i,"🐷"],[/zakat|sedekah|infaq/i,"🤲"]];
@@ -781,7 +892,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   // ---------------- state ----------------
   let cur = {y:now.getFullYear(), m:now.getMonth()};
   let budgets = {...EXPENSE_DEFAULTS};
-  let txs = [], wallets = [], debts = [], fixed = [];
+  let txs = [], wallets = [], debts = [], fixed = [], invest = [];
   let view = "home", planTab = "budget", kindFilter = "", query = "";
   let conf = {url: store.get("dk.url") || DEFAULT_SCRIPT_URL, token: store.get("dk.token")};
   let mode = (conf.url && conf.token) ? "sheet" : "demo";
@@ -794,14 +905,17 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const logRemove = (s,m,id) => logParse(s).filter(([k,v])=>!(k===m && v===id)).map(([k,v])=>`${k}:${v}`).join("|");
 
   // ---------------- normalizers ----------------
-  const kindOf = t => t.kind==="fixed"||t.kind==="debt" ? t.kind : (t.category===FIXED_CAT ? "fixed" : t.category===DEBT_CAT ? "debt" : "daily");
-  const normTx = t => { const o={...t, id:String(t.id), type:t.type==="income"?"income":"expense", amount:Number(t.amount)||0,
+  const kindOf = t => t.type==="transfer" ? "transfer" : t.kind==="fixed"||t.kind==="debt" ? t.kind : (t.category===FIXED_CAT ? "fixed" : t.category===DEBT_CAT ? "debt" : "daily");
+  const normTx = t => { const o={...t, id:String(t.id), type:t.type==="income"?"income":t.type==="transfer"?"transfer":"expense", to:String(t.to||""), amount:Number(t.amount)||0,
     category:String(t.category||"Lainnya"), note:String(t.note||""), wallet:String(t.wallet||""), date:String(t.date||"")}; o.kind=kindOf(o); return o; };
   const normWallet = w => ({id:String(w.id), name:String(w.name||"Pocket"), type:wType(w.type)[0], balance:Number(w.balance)||0});
   const normDebt = d => ({id:String(d.id), name:String(d.name||"Hutang"), lender:String(d.lender||""),
     total:Number(d.total)||0, installment:Number(d.installment)||0, tenor:Number(d.tenor)||0,
     paidCount:Number(d.paidCount)||0, dueDay:Number(d.dueDay)||0, note:String(d.note||""),
     wallet:String(d.wallet||""), paidLog:String(d.paidLog||"")});
+  const INV_TYPES = [["reksadana","Reksa Dana","📈"],["saham","Saham","📊"],["emas","Emas","🥇"],["deposito","Deposito","🏦"],["obligasi","Obligasi/SBN","📜"],["crypto","Crypto","🪙"],["lainnya","Lainnya","💼"]];
+  const iType = t => INV_TYPES.find(x=>x[0]===t) || INV_TYPES[6];
+  const normInvest = v => ({id:String(v.id), name:String(v.name||"Investasi"), type:iType(v.type)[0], cost:Number(v.cost)||0, value:Number(v.value)||0});
   const normFixed = f => ({id:String(f.id), name:String(f.name||"Tagihan"), amount:Number(f.amount)||0,
     dueDay:Number(f.dueDay)||0, wallet:String(f.wallet||""), paidLog:String(f.paidLog||"")});
 
@@ -842,6 +956,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
                {id:"d2",name:"Pinjaman teman",lender:"Andi",total:1000000,installment:250000,tenor:4,paidCount:1,dueDay:28,wallet:"w2",paidLog:""}];
     const add = (id,date,amount,category,note,wallet,kind) => rows.push({id:id||"demo"+(n++),date,month:date.slice(0,7),type:"expense",amount,category,note,wallet,kind,updatedAt:String(n++)});
     add("t-f1",dueDate(1),2000000,FIXED_CAT,"Kos","w1","fixed");
+    rows.push({id:"t-tf1",date:d(1),month:d(1).slice(0,7),type:"transfer",kind:"transfer",amount:300000,category:"Pindah Saldo",note:"Top up GoPay",wallet:"w1",to:"w2",updatedAt:String(n++)});
+    add("t-tf1-fee",d(1),1000,"Biaya Admin","Biaya admin · BCA → GoPay","w1","daily");
     add("t-f2",dueDate(5),350000,FIXED_CAT,"Internet","w1","fixed");
     add("t-d1",dueDate(5),500000,DEBT_CAT,"Cicilan HP ke-5","w1","debt");
     [[0,12000,"Transportasi","Naik ojek online","w2"],[0,28000,"Makan & Minum","Makan siang","w3"],[0,46000,"Belanja","Sabun & tisu","w2"],
@@ -850,8 +966,11 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
      [9,368000,"Transportasi","Bensin & tol","w1"]
     ].forEach(([k,amount,category,note,wallet])=>add(null,d(k),amount,category,note,wallet,"daily"));
     const up = (arr, x, p) => { const e={...x, id:x.id||p+(n++)}; return [arr.filter(r=>r.id!==e.id).concat([e]), e]; };
-    const T = {wallets:()=>wal, debts:()=>dbt, fixed:()=>fx};
-    const setT = (t,v) => { if(t==="wallets") wal=v; else if(t==="debts") dbt=v; else if(t==="fixed") fx=v; };
+    let inv = [{id:"i1",name:"Reksa Dana Pasar Uang",type:"reksadana",cost:5000000,value:5240000},
+               {id:"i2",name:"Emas Antam 10 gr",type:"emas",cost:11500000,value:13250000},
+               {id:"i3",name:"Saham BBCA",type:"saham",cost:4000000,value:3720000}];
+    const T = {wallets:()=>wal, debts:()=>dbt, fixed:()=>fx, invest:()=>inv};
+    const setT = (t,v) => { if(t==="wallets") wal=v; else if(t==="debts") dbt=v; else if(t==="fixed") fx=v; else if(t==="invest") inv=v; };
     return {
       async commit(ops, month){
         ops.forEach(o=>{
@@ -866,7 +985,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
         return this.list(month);
       },
       async list(month){ return {expenses: rows.filter(r=>r.month===month).map(r=>({...r})), budgets:{...bud},
-        wallets: wal.map(w=>({...w})), debts: dbt.map(x=>({...x})), fixed: fx.map(x=>({...x}))}; },
+        wallets: wal.map(w=>({...w})), debts: dbt.map(x=>({...x})), fixed: fx.map(x=>({...x})), invest: inv.map(x=>({...x}))}; },
       async save(x){ let e; [rows,e]=up(rows,{...x, month:x.date.slice(0,7), updatedAt:String(Date.now())},"demo"); return e; },
       async del(id){ rows=rows.filter(r=>r.id!==id); },
       async saveBudgets(b){ bud={...b}; },
@@ -884,6 +1003,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const stamp = () => new Date().toISOString();
   const cSave = async (col, id, body) => { const ref = id ? cdb.collection(col).doc(id) : cdb.collection(col).doc(); body.updatedAt=stamp(); await ref.set(body); return {id:ref.id, ...body}; };
   const TABLE_BODY = {
+    invest: v => ({name:String(v.name).slice(0,40), type:v.type, cost:Number(v.cost)||0, value:Number(v.value)||0}),
     wallets: w => ({name:String(w.name).slice(0,40), type:w.type, balance:Number(w.balance)||0}),
     debts: d => ({name:String(d.name).slice(0,40), lender:String(d.lender||"").slice(0,40), total:d.total, installment:d.installment,
         tenor:d.tenor, paidCount:d.paidCount, dueDay:d.dueDay, note:String(d.note||"").slice(0,120), wallet:String(d.wallet||""), paidLog:String(d.paidLog||"")}),
@@ -906,20 +1026,21 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       return claudeApi.list(month);
     },
     async list(month){
-      const [snap, bs, ws, ds, fs] = await Promise.all([
+      const [snap, bs, ws, ds, fs, is] = await Promise.all([
         cdb.collection("tx").where("month","==",month).get(),
         cdb.doc("settings/budgets").get(),
         cdb.collection("wallets").get(),
         cdb.collection("debts").get(),
-        cdb.collection("fixed").get()
+        cdb.collection("fixed").get(),
+        cdb.collection("invest").get()
       ]);
       const c = bs.exists ? (bs.data()||{}).categories : null;
       const budgets = {};
       if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>budgets[String(k)]=Number(v)||0);
       const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
-      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs)};
+      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
     },
-    save: x => cSave("tx", x.id, {date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":"expense",
+    save: x => cSave("tx", x.id, {date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""),
         amount:x.amount, category:String(x.category||"Lainnya").slice(0,40), note:String(x.note||"").slice(0,120),
         wallet:String(x.wallet||""), kind:x.kind||"daily"}),
     async del(id){ await cdb.collection("tx").doc(id).delete(); },
@@ -940,12 +1061,12 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const fbPath = p => `${fbBase()}/${p}`;
   const fbCol = name => FB.fs.collection(fdb, fbPath(name));
   const myName = () => fbUser ? ((fbUser.displayName||"").trim().split(/\s+/)[0] || (fbUser.email||"").split("@")[0]) : "";
-  const txBody = (x, at) => ({date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":"expense",
+  const txBody = (x, at) => ({date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""),
     amount:x.amount, category:String(x.category||"Lainnya").slice(0,40), note:String(x.note||"").slice(0,120),
     wallet:String(x.wallet||""), kind:x.kind||"daily", by:String(x.by||myName()).slice(0,40), updatedAt:at});
   // live sync: listeners on the shown month + pockets, debts, fixed, budgets
   let liveUnsub = [], liveMonth = null, live = {};
-  const liveReady = () => ["expenses","budgets","wallets","debts","fixed"].every(k=>k in live);
+  const liveReady = () => ["expenses","budgets","wallets","debts","fixed","invest"].every(k=>k in live);
   function stopLive(){ liveUnsub.forEach(u=>{ try{ u(); }catch(e){} }); liveUnsub=[]; liveMonth=null; live={}; }
   function startLive(){
     stopLive();
@@ -957,7 +1078,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       const c = s.exists() ? (s.data()||{}).categories : null, b={};
       if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>b[String(k)]=Number(v)||0);
       live.budgets=b; push(); }, fbError));
-    ["wallets","debts","fixed"].forEach(n=>liveUnsub.push(f.onSnapshot(fbCol(n), s=>{ live[n]=docs(s); push(); }, fbError)));
+    ["wallets","debts","fixed","invest"].forEach(n=>liveUnsub.push(f.onSnapshot(fbCol(n), s=>{ live[n]=docs(s); push(); }, fbError)));
   }
   function fbError(err){
     if(err && err.code==="permission-denied"){
@@ -975,16 +1096,16 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const firebaseApi = {
     async list(month){
       const f=FB.fs;
-      const [snap, bs, ws, ds, fs] = await Promise.all([
+      const [snap, bs, ws, ds, fs, is] = await Promise.all([
         f.getDocs(f.query(fbCol("tx"), f.where("month","==",month))),
         f.getDoc(f.doc(fdb, fbPath("settings/budgets"))),
-        f.getDocs(fbCol("wallets")), f.getDocs(fbCol("debts")), f.getDocs(fbCol("fixed"))
+        f.getDocs(fbCol("wallets")), f.getDocs(fbCol("debts")), f.getDocs(fbCol("fixed")), f.getDocs(fbCol("invest"))
       ]);
       const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
       const c = bs.exists() ? (bs.data()||{}).categories : null;
       const budgets = {};
       if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>budgets[String(k)]=Number(v)||0);
-      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs)};
+      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
     },
     async commit(ops, month){
       const f=FB.fs, b=f.writeBatch(fdb), at=new Date().toISOString();
@@ -1009,7 +1130,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const f=FB.fs, src=`users/${fbUser.uid}`, dst=`households/${HOUSE}`;
     const btn=$("fbMigrate"); btn.disabled=true; btn.textContent="Memindahkan…";
     try{
-      const names=["tx","wallets","debts","fixed"];
+      const names=["tx","wallets","debts","fixed","invest"];
       const snaps=await Promise.all(names.map(n=>f.getDocs(f.collection(fdb, `${src}/${n}`))));
       const bud=await f.getDoc(f.doc(fdb, `${src}/settings/budgets`));
       const items=[];
@@ -1037,7 +1158,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     auth.onAuthStateChanged(fauth, user=>{
       fbUser = user;
       if(user){ mode="firebase"; $("login").hidden=true; $("loginErr").textContent=""; render(); load(); }
-      else { stopLive(); if(mode==="firebase") mode="demo"; txs=[]; wallets=[]; debts=[]; fixed=[]; $("login").hidden = mode==="demo" && sessionStorageGet("dk.demo")==="1"; render(); }
+      else { stopLive(); if(mode==="firebase") mode="demo"; txs=[]; wallets=[]; debts=[]; fixed=[]; invest=[]; $("login").hidden = mode==="demo" && sessionStorageGet("dk.demo")==="1"; render(); }
     });
   }
   function sessionStorageGet(k){ try{ return sessionStorage.getItem(k)||""; }catch(e){ return ""; } }
@@ -1243,13 +1364,24 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   }
 
   function txRow(t){
+    if(t.type==="transfer") return transferRow(t);
     const b=el("button","row"); b.type="button";
     const meta=el("div","meta");
     meta.append(el("div","n", t.note || t.category),
       subLine([t.kind==="daily"?t.category:(t.kind==="fixed"?"Tagihan":"Cicilan"), walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
     const icon = t.kind==="fixed" ? icEl(t.note||t.category, fixedIcon(t.note)) : icEl(t.category);
     b.append(icon, meta, el("div",`amt num money ${t.type==="income"?"inc":""}`, (t.type==="income"?"+":"−")+rp(t.amount)));
-    b.onclick=()=>openTx(t);
+    const parent = /-fee$/.test(t.id) ? allTx().find(x=>x.id===t.id.slice(0,-4) && x.type==="transfer") : null;
+    b.onclick=()=> parent ? openTransfer(parent) : openTx(t);
+    return b;
+  }
+  function transferRow(t){
+    const b=el("button","row"); b.type="button";
+    const meta=el("div","meta"), fee=feeOf(t);
+    meta.append(el("div","n", t.note || `Pindah ke ${walletName(t.to)||"pocket"}`),
+      subLine([`${walletName(t.wallet)||"?"} → ${walletName(t.to)||"?"}`, fee?`admin ${rp(fee)}`:"", relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
+    b.append(icEl("Pindah Saldo"), meta, el("div","amt num money tf","⇄ "+rp(t.amount)));
+    b.onclick=()=>openTransfer(t);
     return b;
   }
   function emptyRow(title, text){ const e=el("div","empty"); e.append(el("b",null,title), text||""); return e; }
@@ -1276,6 +1408,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       r.onclick=()=>openWallet(w); pl.append(r);
     });
     $("addPocketBtn").classList.toggle("first", !wallets.length);
+    $("movePocketBtn").hidden = wallets.length<2;
+    renderInvest();
 
     const today = txs.filter(t=>t.type==="expense" && t.date===isoToday());
     $("tileExp").textContent = rp(today.reduce((a,t)=>a+t.amount,0));
@@ -1377,9 +1511,10 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const q=query.toLowerCase();
     const inRange=histTxs(r);
     const list = inRange.filter(t=>(!kindFilter||t.kind===kindFilter) && (!q || t.note.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || walletName(t.wallet).toLowerCase().includes(q) || String(t.by||"").toLowerCase().includes(q)));
-    const sum = list.reduce((a,t)=>a+(t.type==="expense"?t.amount:0),0);
+    const moved = kindFilter==="transfer";
+    const sum = list.reduce((a,t)=>a+(moved ? (t.type==="transfer"?t.amount:0) : (t.type==="expense"?t.amount:0)),0);
     $("hTotal").textContent = rp(sum);
-    $("hTotalK").textContent = kindFilter||q ? "total (sesuai filter)" : "total pengeluaran";
+    $("hTotalK").textContent = moved ? "total dipindah" : kindFilter||q ? "total (sesuai filter)" : "total pengeluaran";
     $("txCount").textContent = `${list.length} transaksi`;
     // days elapsed in the range (up to today) for the average
     const lastDay = r.end<isoToday() ? r.end : isoToday();
@@ -1414,7 +1549,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
         const d=new Date(t.date+"T00:00:00");
         const day = list.filter(x=>x.date===t.date).reduce((a,x)=>a+(x.type==="expense"?x.amount:0),0);
         if(histPeriod!=="day"){
-          const h=el("div","day-h"); h.append(el("span",null,`${DAYS[d.getDay()]}, ${fmtDay(t.date)}`), el("span","num money","−"+rp(day)));
+          const h=el("div","day-h"); h.append(el("span",null,`${DAYS[d.getDay()]}, ${fmtDay(t.date)}`), el("span","num money", day ? "−"+rp(day) : ""));
           box.append(h);
         }
         card=el("div","list"); box.append(card);
@@ -1453,9 +1588,42 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     });
   }
 
-  let paidOpen=false, doneOpen=false, pocketOpen = store.get("dk.pocketOpen")==="1";
+  let paidOpen=false, doneOpen=false, pocketOpen = store.get("dk.pocketOpen")==="1", investOpen = store.get("dk.investOpen")==="1";
+  const pctTxt = (gain, cost) => cost ? `${gain>=0?"+":"−"}${Math.abs(gain/cost*100).toFixed(1).replace(".",",")}%` : "";
+  function renderInvest(){
+    const cost=invest.reduce((a,v)=>a+v.cost,0), value=invest.reduce((a,v)=>a+v.value,0), gain=value-cost;
+    $("invTotal").textContent = rp(value);
+    const sub=$("invSub"); sub.replaceChildren();
+    if(invest.length){
+      sub.append(`Modal ${rpShort(cost)} · `, el("span", gain>=0?"up":"down", `${gain>=0?"+":"−"}${rpShort(Math.abs(gain)).replace("−","")} (${pctTxt(gain,cost)})`));
+    } else sub.append("Catat reksa dana, saham, emas, atau deposito.");
+    const open = investOpen && invest.length>0;
+    $("invToggle").hidden = !invest.length;
+    $("invToggle").setAttribute("aria-expanded", String(open));
+    $("invToggle").classList.toggle("open", open);
+    $("invToggleTxt").textContent = `${invest.length} investasi · ${open ? "sembunyikan" : "lihat rincian"}`;
+    const ls=$("invList"); ls.replaceChildren(); ls.hidden = !open;
+    invest.slice().sort((a,b)=>b.value-a.value).forEach(v=>{
+      const g=v.value-v.cost, t=iType(v.type);
+      const r=el("button","prow"); r.type="button";
+      const m=el("div","pm"); m.append(el("div","pn",v.name), el("div","ps",`${t[1]} · modal ${rpShort(v.cost)}`));
+      const right=el("div","pv-wrap"); right.append(el("span","pv num money",rp(v.value)), el("span","pg money "+(g>=0?"up":"down"), pctTxt(g,v.cost)));
+      r.append(el("span","pi",t[2]), m, right, el("span","pchev","›"));
+      r.onclick=()=>openInvest(v); ls.append(r);
+    });
+    $("addInvBtn").classList.toggle("first", !invest.length);
+  }
+  $("invToggle").onclick=()=>{ investOpen=!investOpen; store.set("dk.investOpen", investOpen?"1":""); render(); };
+  $("addInvBtn").onclick=()=>openInvest();
+  // swipe between Total aset and Investasi
+  const swipe=$("heroSwipe");
+  function heroSlide(i){ swipe.scrollTo({left: i*swipe.clientWidth, behavior:"smooth"}); }
+  swipe.addEventListener("scroll", ()=>{ const i=Math.round(swipe.scrollLeft/Math.max(1,swipe.clientWidth)); document.querySelectorAll("#heroDots button").forEach((d,k)=>{ d.classList.toggle("on",k===i); d.setAttribute("aria-current", k===i?"true":"false"); }); }, {passive:true});
+  document.querySelectorAll("#heroDots button").forEach((d,k)=>d.onclick=()=>heroSlide(k));
+  swipe.addEventListener("keydown", e=>{ if(e.key==="ArrowRight") heroSlide(1); if(e.key==="ArrowLeft") heroSlide(0); });
   $("pocketToggle").onclick=()=>{ pocketOpen=!pocketOpen; store.set("dk.pocketOpen", pocketOpen?"1":""); render(); };
   $("addPocketBtn").onclick=()=>openWallet();
+  $("movePocketBtn").onclick=()=>openTransfer();
   $("paidFold").onclick=()=>{ paidOpen=!paidOpen; render(); };
   $("doneFold").onclick=()=>{ doneOpen=!doneOpen; render(); };
   function billRow(i){
@@ -1555,16 +1723,22 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2,10);
   const walletOps = deltas => Object.entries(deltas).filter(([id,d])=>id && d).map(([id,delta])=>({op:"adjWallet", id, delta}));
   function addDelta(map, id, d){ if(id) map[id]=(map[id]||0)+d; }
-  const NORM = {wallets:normWallet, debts:normDebt, fixed:normFixed};
+  // how a transaction moves pocket balances: expense/old income on one pocket, transfer between two
+  function effects(t){ const m={}; if(!t) return m;
+    if(t.type==="transfer"){ addDelta(m,t.wallet,-t.amount); addDelta(m,t.to,t.amount); }
+    else addDelta(m,t.wallet, effect(t));
+    return m; }
+  function mergeDeltas(a,b,sign=1){ for(const [k,v] of Object.entries(b)) a[k]=(a[k]||0)+sign*v; return a; }
+  const NORM = {wallets:normWallet, debts:normDebt, fixed:normFixed, invest:normInvest};
   function applyLocal(ops){
     const M=monthKey();
     ops.forEach(o=>{
       if(o.op==="putTx"){ txs=txs.filter(t=>t.id!==o.tx.id); if(o.tx.date.slice(0,7)===M) txs.push(normTx({...o.tx, updatedAt:new Date().toISOString()})); }
       else if(o.op==="delTx") txs=txs.filter(t=>t.id!==o.id);
       else if(o.op==="adjWallet") wallets=wallets.map(w=>w.id===o.id?{...w, balance:w.balance+o.delta}:w);
-      else if(o.op==="put"){ const row=NORM[o.table](o.row); const list={wallets,debts,fixed}[o.table].filter(r=>r.id!==row.id).concat([row]);
-        if(o.table==="wallets") wallets=list; else if(o.table==="debts") debts=list; else fixed=list; }
-      else if(o.op==="del"){ if(o.table==="wallets") wallets=wallets.filter(r=>r.id!==o.id); else if(o.table==="debts") debts=debts.filter(r=>r.id!==o.id); else fixed=fixed.filter(r=>r.id!==o.id); }
+      else if(o.op==="put"){ const row=NORM[o.table](o.row); const list={wallets,debts,fixed,invest}[o.table].filter(r=>r.id!==row.id).concat([row]);
+        if(o.table==="wallets") wallets=list; else if(o.table==="debts") debts=list; else if(o.table==="invest") invest=list; else fixed=list; }
+      else if(o.op==="del"){ if(o.table==="wallets") wallets=wallets.filter(r=>r.id!==o.id); else if(o.table==="debts") debts=debts.filter(r=>r.id!==o.id); else if(o.table==="invest") invest=invest.filter(r=>r.id!==o.id); else fixed=fixed.filter(r=>r.id!==o.id); }
       else if(o.op==="budgets") budgets={...o.value};
     });
     txs.sort((a,b)=>b.date.localeCompare(a.date) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
@@ -1666,7 +1840,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     if(!date){ toast("Pilih tanggal",true); return; }
     const x={id: editing?editing.id:uid(), by: editing&&editing.by ? editing.by : myName(), type: editing?editing.type:"expense", kind: editing?editing.kind:"daily",
       amount, date, category: editing && editing.kind!=="daily" ? editing.category : sheetCat, note:$("fNote").value.trim(), wallet:sheetWallet};
-    const deltas={}; if(editing) addDelta(deltas, editing.wallet, -effect(editing)); addDelta(deltas, x.wallet, effect(x));
+    const deltas={}; if(editing) mergeDeltas(deltas, effects(editing), -1); mergeDeltas(deltas, effects(x));
     if(x.wallet) store.set("dk.wallet", x.wallet);
     const wasEditing = !!editing;
     closeModal();
@@ -1679,7 +1853,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   });
   confirmBtn($("delBtn"), "Yakin hapus?", async ()=>{
     const t=editing; if(!t) return;
-    const deltas={}; addDelta(deltas, t.wallet, -effect(t));
+    const deltas=mergeDeltas({}, effects(t), -1);
     const ops=[{op:"delTx", id:t.id}, ...walletOps(deltas)];
     if(t.kind==="debt"){ // keep the debt count in step
       const d=debts.find(d=>logParse(d.paidLog).some(([,v])=>v===t.id));
@@ -1713,6 +1887,39 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     }
   }
 
+  // ---------------- investment sheet ----------------
+  let vEditing=null, vTypeSel="reksadana";
+  function renderITypes(){
+    const box=$("iTypes"); box.replaceChildren();
+    INV_TYPES.forEach(([k,label,emo])=>{ const c=el("button","chip"+(k===vTypeSel?" on":""), `${emo} ${label}`); c.type="button"; c.onclick=()=>{ vTypeSel=k; renderITypes(); }; box.append(c); });
+  }
+  function updateIGain(){
+    const c=parseAmt($("iCost").value), v=parseAmt($("iValue").value), g=v-c, h=$("iGain");
+    h.textContent = c && v ? `${g>=0?"Untung":"Rugi"} ${rp(Math.abs(g))} (${pctTxt(g,c)})` : "";
+    h.className = "hint igain " + (g>=0?"t-g":"t-r");
+  }
+  function openInvest(v){
+    vEditing=v||null; vTypeSel = v ? v.type : "reksadana";
+    $("iTitle").textContent = v ? "Ubah Investasi" : "Tambah Investasi";
+    $("iName").value = v ? v.name : "";
+    $("iCost").value = v ? fmtInput(v.cost) : "";
+    $("iValue").value = v ? fmtInput(v.value) : "";
+    $("iDel").hidden = !v; resetConfirm($("iDel"),"Hapus");
+    renderITypes(); updateIGain(); openModal("isheet");
+  }
+  [$("iCost"),$("iValue")].forEach(i=>{ moneyInput(i); i.addEventListener("input", updateIGain); });
+  $("isheet").addEventListener("submit", e=>{
+    e.preventDefault();
+    const name=$("iName").value.trim(), cost=parseAmt($("iCost").value);
+    let value=parseAmt($("iValue").value);
+    if(!name){ toast("Isi nama investasi",true); return; }
+    if(!cost){ toast("Isi modal yang disetor",true); return; }
+    if(!value) value=cost;
+    const row={id:vEditing?vEditing.id:uid(), name, type:vTypeSel, cost, value};
+    closeModal(); mutate([{op:"put", table:"invest", row}]); toast(vEditing?"Investasi diperbarui":"Investasi ditambahkan");
+  });
+  confirmBtn($("iDel"), "Yakin hapus?", async ()=>{ const id=vEditing.id; closeModal(); mutate([{op:"del", table:"invest", id}]); toast("Investasi dihapus"); });
+
   // ---------------- pocket sheet ----------------
   let wEditing=null, wTypeSel="bank";
   function renderWTypes(){
@@ -1727,12 +1934,96 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     $("wHint").textContent = credit ? "Tagihan dicatat sebagai saldo minus dan mengurangi total aset."
       : "Uang masuk (gaji, transfer) cukup dengan memperbarui saldo di sini. Pengeluaran otomatis mengurangi saldo.";
   }
+  // ---------------- pindah saldo antar pocket (+ biaya admin untuk e-wallet) ----------------
+  let tEditing=null;
+  const feeId = id => id+"-fee";
+  const allTx = () => txs.concat(...Object.values(histCache));
+  const feeTx = t => allTx().find(x=>x.id===feeId(t.id));
+  const feeOf = t => { const f=feeTx(t); return f ? f.amount : 0; };
+  const isEwallet = id => { const w=wallets.find(x=>x.id===id); return !!w && w.type==="ewallet"; };
+  function fillPocketSelect(sel, value){
+    sel.replaceChildren();
+    wallets.forEach(w=>{ const o=el("option",null,`${wType(w.type)[2]} ${w.name} · ${shortNoRp(w.balance)}`); o.value=w.id; sel.append(o); });
+    sel.value=value;
+  }
+  function openTransfer(t, fromId){
+    if(wallets.length<2){ toast("Tambahkan minimal 2 pocket dulu",true); return; }
+    tEditing=t||null;
+    const last=store.get("dk.wallet");
+    const from = t ? t.wallet : (fromId || (wallets.some(w=>w.id===last)?last:wallets[0].id));
+    const to = t ? t.to : (wallets.find(w=>w.id!==from && w.type==="ewallet") || wallets.find(w=>w.id!==from)).id;
+    $("tTitle").textContent = t ? "Ubah Pindah Saldo" : "Pindah Saldo";
+    $("tAmt").value = t ? fmtInput(t.amount) : "";
+    fillPocketSelect($("tFrom"), from); fillPocketSelect($("tTo"), to);
+    const fee = t ? feeOf(t) : 0;
+    $("tFee").value = fee ? fmtInput(fee) : "";
+    $("tFeeOn").checked = !!fee;
+    $("tDate").value = t ? t.date : isoToday();
+    $("tNote").value = t ? t.note : "";
+    $("tDel").hidden = !t; resetConfirm($("tDel"),"Hapus");
+    updateTransfer(); openModal("tsheet");
+    if(!t) setTimeout(()=>$("tAmt").focus(), 250);
+  }
+  function updateTransfer(){
+    const from=$("tFrom").value, to=$("tTo").value;
+    const ew = isEwallet(from) || isEwallet(to);
+    $("tFeeBox").hidden = !ew;
+    $("tFeeRow").hidden = !ew || !$("tFeeOn").checked;
+    const amt=parseAmt($("tAmt").value), fee = ew && $("tFeeOn").checked ? parseAmt($("tFee").value) : 0;
+    const s=$("tSum"); s.replaceChildren();
+    if(from===to){ s.append(colored("Pilih pocket tujuan yang berbeda","r")); return; }
+    if(!amt){ s.textContent = ew ? "Isi nominal. Biaya admin dicatat sebagai pengeluaran dari pocket asal." : "Isi nominal yang dipindahkan."; return; }
+    const fw=wallets.find(w=>w.id===from);
+    let avail = fw ? fw.balance : 0;
+    if(tEditing && tEditing.wallet===from) avail += tEditing.amount + feeOf(tEditing);
+    s.append(`${walletName(from)} −${rp(amt+fee)}${fee?` (termasuk admin ${rp(fee)})`:""} · ${walletName(to)} +${rp(amt)}`);
+    if(fw && fw.type!=="credit" && amt+fee>avail) s.append(el("br"), colored(`Saldo ${fw.name} tidak cukup (${rp(avail)})`,"a"));
+  }
+  ["tFrom","tTo"].forEach(id=>$(id).addEventListener("change", updateTransfer));
+  $("tFeeOn").addEventListener("change", ()=>{ updateTransfer(); if($("tFeeOn").checked) $("tFee").focus(); });
+  moneyInput($("tAmt")); moneyInput($("tFee"));
+  $("tAmt").addEventListener("input", updateTransfer); $("tFee").addEventListener("input", updateTransfer);
+  $("tFeeQuick").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; $("tFee").value=fmtInput(Number(b.dataset.fee)); updateTransfer(); });
+  $("tSwap").onclick=()=>{ const a=$("tFrom").value; $("tFrom").value=$("tTo").value; $("tTo").value=a; updateTransfer(); };
+  $("tsheet").addEventListener("submit", e=>{
+    e.preventDefault();
+    const from=$("tFrom").value, to=$("tTo").value, amount=parseAmt($("tAmt").value), date=$("tDate").value;
+    if(!amount){ toast("Isi nominal dulu ya",true); $("tAmt").focus(); return; }
+    if(!from || !to || from===to){ toast("Pilih dua pocket yang berbeda",true); return; }
+    if(!date){ toast("Pilih tanggal",true); return; }
+    const ew = isEwallet(from) || isEwallet(to);
+    const fee = ew && $("tFeeOn").checked ? parseAmt($("tFee").value) : 0;
+    const old=tEditing, id = old ? old.id : uid(), by = old && old.by ? old.by : myName();
+    const tx={id, by, type:"transfer", kind:"transfer", amount, date, category:"Pindah Saldo", note:$("tNote").value.trim().slice(0,120), wallet:from, to};
+    const ftx = fee ? {id:feeId(id), by, type:"expense", kind:"daily", amount:fee, date, category:"Biaya Admin", note:`Biaya admin · ${walletName(from)} → ${walletName(to)}`.slice(0,120), wallet:from} : null;
+    const deltas={}, ops=[];
+    if(old){ mergeDeltas(deltas, effects(old), -1); const of=feeTx(old); if(of){ mergeDeltas(deltas, effects(of), -1); if(!ftx) ops.push({op:"delTx", id:of.id}); } }
+    mergeDeltas(deltas, effects(tx)); if(ftx) mergeDeltas(deltas, effects(ftx));
+    ops.push({op:"putTx", tx}); if(ftx) ops.push({op:"putTx", tx:ftx});
+    ops.push(...walletOps(deltas));
+    store.set("dk.wallet", from);
+    closeModal();
+    const [y,m]=date.split("-").map(Number);
+    if(y!==cur.y || m-1!==cur.m){ cur={y,m:m-1}; mutate(ops).then(()=>load()); }
+    else mutate(ops);
+    toast(old ? "Pindah saldo diperbarui" : `${rp(amount)} dipindah ke ${walletName(to)} ✓`);
+  });
+  confirmBtn($("tDel"), "Yakin hapus?", async ()=>{
+    const t=tEditing; if(!t) return;
+    const f=feeTx(t), deltas=mergeDeltas({}, effects(t), -1);
+    const ops=[{op:"delTx", id:t.id}];
+    if(f){ mergeDeltas(deltas, effects(f), -1); ops.push({op:"delTx", id:f.id}); }
+    closeModal(); mutate([...ops, ...walletOps(deltas)]);
+    toast("Pindah saldo dihapus, saldo dikembalikan");
+  });
+
   function openWallet(w){
     wEditing=w||null; wTypeSel = w ? w.type : "bank";
     $("wTitle").textContent = w ? "Ubah Pocket" : "Tambah Pocket";
     $("wName").value = w ? w.name : "";
     $("wBal").value = w ? fmtInput(Math.abs(w.balance)) : "";
     $("wDel").hidden = !w; resetConfirm($("wDel"),"Hapus");
+    $("wMove").hidden = !w || wallets.length<2;
     renderWTypes(); openModal("wsheet");
   }
   moneyInput($("wBal"));
@@ -1744,6 +2035,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const w={id:wEditing?wEditing.id:undefined, name, type:wTypeSel, balance: wTypeSel==="credit" ? -amt : amt};
     closeModal(); mutate([{op:"put", table:"wallets", row:{...w, id:w.id||uid()}}]); toast(wEditing?"Pocket diperbarui":"Pocket ditambahkan");
   });
+  $("wMove").onclick=()=>{ const w=wEditing; if(w) openTransfer(null, w.id); };
   confirmBtn($("wDel"), "Yakin hapus?", async ()=>{
     const id=wEditing.id; closeModal(); mutate([{op:"del", table:"wallets", id}]); toast("Pocket dihapus");
   });
@@ -1873,6 +2165,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     wallets = (data.wallets||[]).map(normWallet);
     debts = (data.debts||[]).map(normDebt);
     fixed = (data.fixed||[]).map(normFixed);
+    invest = (data.invest||[]).map(normInvest);
     if(mode==="sheet" || mode==="firebase"){ try{ localStorage.setItem(cacheKey(monthKey()), JSON.stringify({...data, at:Date.now()})); }catch(e){} }
     render();
   }
