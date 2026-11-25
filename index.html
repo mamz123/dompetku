@@ -1334,7 +1334,7 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   }
   $("connForm").addEventListener("submit", async e=>{
     e.preventDefault();
-    const url=$("cUrl").value.trim(), token=$("cTok").value;
+    const url=$("cUrl").value.trim(), token=$("cTok").value.trim();
     if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)){ toast("URL harus seperti https://script.google.com/macros/s/…/exec",true); return; }
     const prev={conf, mode};
     conf={url,token}; mode="sheet";
