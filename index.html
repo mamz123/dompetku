@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0c1712">
+<script src="firebase-config.js"></script>
 <title>Dompetku — Catat Keuangan Pribadi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -231,6 +232,15 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
 .chk.on{background:var(--lime);border-color:var(--lime);color:var(--lime-ink)}
 .chk:disabled{opacity:.5}
 .kind-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted);margin-left:6px;vertical-align:middle}
+body.saving::before{content:"";position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--lime),transparent);animation:dksync 1.1s linear infinite;z-index:60}
+@keyframes dksync{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+.login{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 80% at 50% 0%,#1b3323 0%,var(--bg) 60%);display:grid;place-items:center;padding:24px}
+.login-box{width:min(380px,100%);text-align:center}
+.login-box h1{font-size:30px}
+.login-logo{width:64px;height:64px;border-radius:20px;margin:0 auto 18px}
+.btn.google{background:#fff;color:#1f1f1f;border-color:#fff;font-weight:700;padding:15px 18px}
+.login-err{color:var(--exp);font-size:13.5px;min-height:20px;margin:12px 0 0;line-height:1.45}
 
 .bud-top .p.okp{background:rgba(63,143,31,.14);color:var(--inc)}
 [data-theme=dark] .bud-top .p.okp{color:var(--lime);background:rgba(210,251,74,.1)}
@@ -383,6 +393,14 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   <!-- SETTINGS -->
   <section class="view" id="v-settings" hidden>
     <div class="title-row"><div><h1>Akun</h1><div class="hello">Pengaturan & penyimpanan</div></div></div>
+    <div class="card" id="fbCard" hidden>
+      <div class="card-h"><h2>Akun</h2><span class="link" id="fbState"></span></div>
+      <p class="hello" style="margin:4px 0 14px">Data tersimpan di Firebase milikmu. Siapa yang boleh membukanya diatur di Firestore Rules.</p>
+      <div class="setting" style="padding-top:0"><div><div id="fbWho"></div><div class="d" id="fbHouse">Akun Google</div></div></div>
+      <button class="btn block" id="fbMigrate" type="button" hidden style="margin-bottom:8px">Pindahkan data pribadi ke rumah tangga</button>
+      <button class="btn block danger" id="fbOut" type="button">Keluar</button>
+      <button class="btn primary block" id="fbIn" type="button">Masuk dengan Google</button>
+    </div>
     <div class="card" id="claudeCard" hidden>
       <div class="card-h"><h2>Penyimpanan</h2><span class="link"><span class="status-dot ok"></span>Aktif</span></div>
       <p class="hello" style="margin:4px 0 0">Data tersimpan otomatis di database halaman ini di claude.ai. Hanya kamu yang bisa membaca atau mengubahnya.</p>
@@ -523,6 +541,23 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   </div>
 </form>
 
+<!-- login -->
+<div class="login" id="login" hidden>
+  <div class="login-box">
+    <div class="logo login-logo" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v4"/><path d="M4 7.5V17a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-3"/><path d="M20 9h-4a3 3 0 0 0 0 6h4z"/></svg>
+    </div>
+    <h1>Dompetku</h1>
+    <p class="hello" style="margin:6px 0 26px">Catat pengeluaran, pantau budget, tagihan, dan hutang.</p>
+    <button class="btn block google" id="loginBtn" type="button">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Masuk dengan Google
+    </button>
+    <p class="login-err" id="loginErr" role="alert"></p>
+    <button class="link" id="loginDemo" type="button" style="margin-top:10px">Coba mode demo dulu</button>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -530,6 +565,10 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   "use strict";
   // Optional: paste your Apps Script Web App URL here so you only type the token.
   const DEFAULT_SCRIPT_URL = "";
+  // Firebase: settings come from firebase-config.js (window.DOMPETKU_FIREBASE)
+  const FB_CFG = (window.DOMPETKU_FIREBASE && typeof window.DOMPETKU_FIREBASE==="object"
+    && window.DOMPETKU_FIREBASE.apiKey && !/GANTI/i.test(window.DOMPETKU_FIREBASE.apiKey)) ? window.DOMPETKU_FIREBASE : null;
+  const FB_VERSION = "13.2.0";
 
   const EXPENSE_DEFAULTS = {"Makan & Minum":3000000,"Transportasi":1000000,"Belanja":1000000,"Hiburan":500000,"Kesehatan":500000,"Lainnya":500000};
   const FIXED_CAT = "Pengeluaran Tetap", DEBT_CAT = "Cicilan Hutang";
@@ -571,7 +610,7 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   let view = "home", planTab = "budget", kindFilter = "", query = "";
   let conf = {url: store.get("dk.url") || DEFAULT_SCRIPT_URL, token: store.get("dk.token")};
   let mode = (conf.url && conf.token) ? "sheet" : "demo";
-  let reqSeq = 0, busy = false;
+  let reqSeq = 0;
 
   // ---------------- paid log: "YYYY-MM:txId|YYYY-MM:txId" ----------------
   const logParse = s => String(s||"").split("|").filter(Boolean).map(p=>{ const i=p.indexOf(":"); return [p.slice(0,i), p.slice(i+1)]; });
@@ -601,6 +640,7 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   }
   const sheetBackend = {
     list: m => sheetApi("list",{month:m}),
+    commit: (ops, m) => sheetApi("commit",{ops, month:m}),
     save: async x => (await sheetApi("save",{expense:x})).expense,
     del: id => sheetApi("delete",{id}),
     saveBudgets: b => sheetApi("saveBudgets",{budgets:b}),
@@ -635,7 +675,21 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
      [9,368000,"Transportasi","Bensin & tol","w1"]
     ].forEach(([k,amount,category,note,wallet])=>add(null,d(k),amount,category,note,wallet,"daily"));
     const up = (arr, x, p) => { const e={...x, id:x.id||p+(n++)}; return [arr.filter(r=>r.id!==e.id).concat([e]), e]; };
+    const T = {wallets:()=>wal, debts:()=>dbt, fixed:()=>fx};
+    const setT = (t,v) => { if(t==="wallets") wal=v; else if(t==="debts") dbt=v; else if(t==="fixed") fx=v; };
     return {
+      async commit(ops, month){
+        ops.forEach(o=>{
+          if(o.op==="putTx"){ rows=rows.filter(r=>r.id!==o.tx.id).concat([{...o.tx, month:o.tx.date.slice(0,7), updatedAt:String(Date.now())}]); }
+          else if(o.op==="delTx") rows=rows.filter(r=>r.id!==o.id);
+          else if(o.op==="adjWallet") wal=wal.map(w=>w.id===o.id?{...w, balance:w.balance+o.delta}:w);
+          else if(o.op==="put"){ setT(o.table, T[o.table]().filter(r=>r.id!==o.row.id).concat([{...o.row}])); }
+          else if(o.op==="del") setT(o.table, T[o.table]().filter(r=>r.id!==o.id));
+          else if(o.op==="budgets") bud={...o.value};
+        });
+        await new Promise(r=>setTimeout(r,120));
+        return this.list(month);
+      },
       async list(month){ return {expenses: rows.filter(r=>r.month===month).map(r=>({...r})), budgets:{...bud},
         wallets: wal.map(w=>({...w})), debts: dbt.map(x=>({...x})), fixed: fx.map(x=>({...x}))}; },
       async save(x){ let e; [rows,e]=up(rows,{...x, month:x.date.slice(0,7), updatedAt:String(Date.now())},"demo"); return e; },
@@ -654,7 +708,28 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
   let cdb = null;
   const stamp = () => new Date().toISOString();
   const cSave = async (col, id, body) => { const ref = id ? cdb.collection(col).doc(id) : cdb.collection(col).doc(); body.updatedAt=stamp(); await ref.set(body); return {id:ref.id, ...body}; };
+  const TABLE_BODY = {
+    wallets: w => ({name:String(w.name).slice(0,40), type:w.type, balance:Number(w.balance)||0}),
+    debts: d => ({name:String(d.name).slice(0,40), lender:String(d.lender||"").slice(0,40), total:d.total, installment:d.installment,
+        tenor:d.tenor, paidCount:d.paidCount, dueDay:d.dueDay, note:String(d.note||"").slice(0,120), wallet:String(d.wallet||""), paidLog:String(d.paidLog||"")}),
+    fixed: f => ({name:String(f.name).slice(0,40), amount:f.amount, dueDay:f.dueDay, wallet:String(f.wallet||""), paidLog:String(f.paidLog||"")})
+  };
   const claudeApi = {
+    async commit(ops, month){
+      for(const o of ops){
+        if(o.op==="putTx") await claudeApi.save(o.tx);
+        else if(o.op==="delTx") await claudeApi.del(o.id);
+        else if(o.op==="adjWallet"){
+          if(!o.id || !o.delta) continue;
+          const ref=cdb.collection("wallets").doc(o.id), snap=await ref.get();
+          if(snap.exists){ const d=snap.data()||{}; await ref.set({...d, balance:(Number(d.balance)||0)+o.delta, updatedAt:stamp()}); }
+        }
+        else if(o.op==="put") await cSave(o.table, o.row.id, TABLE_BODY[o.table](o.row));
+        else if(o.op==="del") await cdb.collection(o.table).doc(o.id).delete();
+        else if(o.op==="budgets") await claudeApi.saveBudgets(o.value);
+      }
+      return claudeApi.list(month);
+    },
     async list(month){
       const [snap, bs, ws, ds, fs] = await Promise.all([
         cdb.collection("tx").where("month","==",month).get(),
@@ -682,7 +757,145 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     saveFixed: f => cSave("fixed", f.id, {name:String(f.name).slice(0,40), amount:f.amount, dueDay:f.dueDay, wallet:String(f.wallet||""), paidLog:String(f.paidLog||"")}),
     async delFixed(id){ await cdb.collection("fixed").doc(id).delete(); }
   };
-  const api = () => mode==="demo" ? demo : mode==="claude" ? claudeApi : sheetBackend;
+  // ---------------- Firebase (Firestore + Google sign-in) ----------------
+  let FB = null, fdb = null, fauth = null, fbUser = null;
+  // householdId in firebase-config.js → one shared space for every allowed email; empty → personal space
+  const HOUSE = FB_CFG && FB_CFG.householdId ? String(FB_CFG.householdId).trim().replace(/[^A-Za-z0-9_-]/g,"").slice(0,60) : "";
+  const fbBase = () => HOUSE ? `households/${HOUSE}` : `users/${fbUser.uid}`;
+  const fbPath = p => `${fbBase()}/${p}`;
+  const fbCol = name => FB.fs.collection(fdb, fbPath(name));
+  const myName = () => fbUser ? ((fbUser.displayName||"").trim().split(/\s+/)[0] || (fbUser.email||"").split("@")[0]) : "";
+  const txBody = (x, at) => ({date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":"expense",
+    amount:x.amount, category:String(x.category||"Lainnya").slice(0,40), note:String(x.note||"").slice(0,120),
+    wallet:String(x.wallet||""), kind:x.kind||"daily", by:String(x.by||myName()).slice(0,40), updatedAt:at});
+  // live sync: listeners on the shown month + pockets, debts, fixed, budgets
+  let liveUnsub = [], liveMonth = null, live = {};
+  const liveReady = () => ["expenses","budgets","wallets","debts","fixed"].every(k=>k in live);
+  function stopLive(){ liveUnsub.forEach(u=>{ try{ u(); }catch(e){} }); liveUnsub=[]; liveMonth=null; live={}; }
+  function startLive(){
+    stopLive();
+    const f=FB.fs, M=monthKey(); liveMonth=M;
+    const push = () => { if(liveReady() && !pending && liveMonth===monthKey() && mode==="firebase"){ setData({...live}); $("app").classList.remove("loading"); syncing(false); } };
+    const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
+    liveUnsub.push(f.onSnapshot(f.query(fbCol("tx"), f.where("month","==",M)), s=>{ live.expenses=docs(s); push(); }, fbError));
+    liveUnsub.push(f.onSnapshot(f.doc(fdb, fbPath("settings/budgets")), s=>{
+      const c = s.exists() ? (s.data()||{}).categories : null, b={};
+      if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>b[String(k)]=Number(v)||0);
+      live.budgets=b; push(); }, fbError));
+    ["wallets","debts","fixed"].forEach(n=>liveUnsub.push(f.onSnapshot(fbCol(n), s=>{ live[n]=docs(s); push(); }, fbError)));
+  }
+  function fbError(err){
+    if(err && err.code==="permission-denied"){
+      stopLive();
+      const who = fbUser && fbUser.email ? fbUser.email : "Akun ini";
+      $("login").hidden=false;
+      $("loginBtn").lastChild.textContent = " Masuk dengan akun lain";
+      $("loginErr").textContent = HOUSE
+        ? `${who} belum diizinkan membuka data rumah tangga ini. Minta pemiliknya menambahkan email ini di Firebase → Firestore → Rules, lalu coba lagi.`
+        : "Akses ditolak. Pastikan aturan keamanan dari firestore.rules sudah dipasang dan di-Publish.";
+      return;
+    }
+    toast("Gagal sinkron: "+(err && (err.code||err.message)), true);
+  }
+  const firebaseApi = {
+    async list(month){
+      const f=FB.fs;
+      const [snap, bs, ws, ds, fs] = await Promise.all([
+        f.getDocs(f.query(fbCol("tx"), f.where("month","==",month))),
+        f.getDoc(f.doc(fdb, fbPath("settings/budgets"))),
+        f.getDocs(fbCol("wallets")), f.getDocs(fbCol("debts")), f.getDocs(fbCol("fixed"))
+      ]);
+      const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
+      const c = bs.exists() ? (bs.data()||{}).categories : null;
+      const budgets = {};
+      if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>budgets[String(k)]=Number(v)||0);
+      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs)};
+    },
+    async commit(ops, month){
+      const f=FB.fs, b=f.writeBatch(fdb), at=new Date().toISOString();
+      const known = new Set(wallets.map(w=>w.id));
+      ops.forEach(o=>{
+        if(o.op==="putTx") b.set(f.doc(fbCol("tx"), o.tx.id), txBody(o.tx, at));
+        else if(o.op==="delTx") b.delete(f.doc(fbCol("tx"), o.id));
+        else if(o.op==="adjWallet"){ if(o.id && o.delta && known.has(o.id)) b.update(f.doc(fbCol("wallets"), o.id), {balance:f.increment(o.delta), updatedAt:at}); }
+        else if(o.op==="put") b.set(f.doc(fbCol(o.table), o.row.id), {...TABLE_BODY[o.table](o.row), updatedAt:at});
+        else if(o.op==="del") b.delete(f.doc(fbCol(o.table), o.id));
+        else if(o.op==="budgets") b.set(f.doc(fdb, fbPath("settings/budgets")), {categories:o.value, updatedAt:at});
+      });
+      try{ await b.commit(); }
+      catch(err){ if(err && err.code==="permission-denied") fbError(err); throw err; }
+      // live listeners keep the screen current; hand back what they hold
+      return liveReady() && liveMonth===month ? {...live} : firebaseApi.list(month);
+    }
+  };
+  // one-time copy of a personal space (users/{uid}) into the shared household
+  async function migrateToHousehold(){
+    if(!HOUSE || !fbUser) return;
+    const f=FB.fs, src=`users/${fbUser.uid}`, dst=`households/${HOUSE}`;
+    const btn=$("fbMigrate"); btn.disabled=true; btn.textContent="Memindahkan…";
+    try{
+      const names=["tx","wallets","debts","fixed"];
+      const snaps=await Promise.all(names.map(n=>f.getDocs(f.collection(fdb, `${src}/${n}`))));
+      const bud=await f.getDoc(f.doc(fdb, `${src}/settings/budgets`));
+      const items=[];
+      snaps.forEach((s,i)=>s.docs.forEach(d=>items.push([`${dst}/${names[i]}/${d.id}`, {...d.data(), ...(names[i]==="tx" && !d.data().by ? {by:myName()} : {})}])));
+      if(bud.exists()) items.push([`${dst}/settings/budgets`, bud.data()]);
+      if(!items.length){ toast("Tidak ada data pribadi untuk dipindahkan"); return; }
+      for(let i=0;i<items.length;i+=400){
+        const b=f.writeBatch(fdb);
+        items.slice(i,i+400).forEach(([p,v])=>b.set(f.doc(fdb,p), v));
+        await b.commit();
+      }
+      toast(`${items.length} data dipindahkan ke rumah tangga ✓`);
+    }catch(err){ toast("Gagal memindahkan: "+(err.code||err.message), true); }
+    finally{ btn.disabled=false; btn.textContent="Pindahkan data pribadi ke rumah tangga"; }
+  }
+  async function initFirebase(){
+    const base = `https://www.gstatic.com/firebasejs/${FB_VERSION}/`;
+    const [app, auth, fs] = await Promise.all([import(base+"firebase-app.js"), import(base+"firebase-auth.js"), import(base+"firebase-firestore.js")]);
+    FB = {app, auth, fs};
+    const fapp = app.initializeApp(FB_CFG);
+    fauth = auth.getAuth(fapp);
+    try{ fdb = fs.initializeFirestore(fapp, {localCache: fs.persistentLocalCache({tabManager: fs.persistentMultipleTabManager()})}); }
+    catch(e){ fdb = fs.getFirestore(fapp); }
+    auth.getRedirectResult(fauth).catch(err=>showLoginError(err));
+    auth.onAuthStateChanged(fauth, user=>{
+      fbUser = user;
+      if(user){ mode="firebase"; $("login").hidden=true; $("loginErr").textContent=""; render(); load(); }
+      else { stopLive(); if(mode==="firebase") mode="demo"; txs=[]; wallets=[]; debts=[]; fixed=[]; $("login").hidden = mode==="demo" && sessionStorageGet("dk.demo")==="1"; render(); }
+    });
+  }
+  function sessionStorageGet(k){ try{ return sessionStorage.getItem(k)||""; }catch(e){ return ""; } }
+  function sessionStorageSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+  const AUTH_ERR = {
+    "auth/unauthorized-domain": () => `Domain ${location.hostname} belum diizinkan. Tambahkan di Firebase → Authentication → Settings → Authorized domains.`,
+    "auth/operation-not-allowed": () => "Login Google belum diaktifkan. Aktifkan di Firebase → Authentication → Sign-in method → Google.",
+    "auth/popup-closed-by-user": () => "Jendela login ditutup sebelum selesai.",
+    "auth/cancelled-popup-request": () => "Jendela login ditutup sebelum selesai.",
+    "auth/network-request-failed": () => "Tidak ada koneksi internet.",
+    "auth/invalid-api-key": () => "apiKey di firebase-config.js salah. Salin ulang dari Firebase Console.",
+    "auth/api-key-not-valid.-please-pass-a-valid-api-key.": () => "apiKey di firebase-config.js salah. Salin ulang dari Firebase Console."
+  };
+  function showLoginError(err){
+    if(!err) return;
+    const f = AUTH_ERR[err.code];
+    $("loginErr").textContent = f ? f() : ("Gagal masuk: " + (err.code || err.message));
+  }
+  async function signIn(){
+    $("loginErr").textContent = "";
+    if(!FB){ $("loginErr").textContent = "Firebase belum siap. Periksa koneksi lalu muat ulang halaman."; return; }
+    if(fbUser){ try{ await FB.auth.signOut(fauth); }catch(e){} }   // "masuk dengan akun lain"
+    const provider = new FB.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:"select_account"});
+    try{ await FB.auth.signInWithPopup(fauth, provider); }
+    catch(err){
+      if(err.code==="auth/popup-blocked" || err.code==="auth/operation-not-supported-in-this-environment"){
+        try{ await FB.auth.signInWithRedirect(fauth, provider); } catch(e2){ showLoginError(e2); }
+      } else showLoginError(err);
+    }
+  }
+
+  const api = () => mode==="demo" ? demo : mode==="claude" ? claudeApi : mode==="firebase" ? firebaseApi : sheetBackend;
 
   // ---------------- helpers ----------------
   function toast(msg, err){
@@ -852,7 +1065,7 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     const b=el("button","tx"); b.type="button";
     const meta=el("div","meta");
     const name=el("div","n", t.note || t.category);
-    meta.append(name, el("div","s", [t.kind==="daily"?t.category:(t.kind==="fixed"?"Tetap":"Cicilan"), walletName(t.wallet), relDay(t.date)].filter(Boolean).join(" · ")));
+    meta.append(name, el("div","s", [t.kind==="daily"?t.category:(t.kind==="fixed"?"Tetap":"Cicilan"), walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""].filter(Boolean).join(" · ")));
     const icon = t.kind==="fixed" ? icEl(t.note||t.category, fixedIcon(t.note)) : icEl(t.category);
     b.append(icon, meta, el("div",`amt mono money ${t.type==="income"?"inc":"exp"}`, (t.type==="income"?"+":"−")+rp(t.amount)));
     b.onclick=()=>openTx(t);
@@ -968,7 +1181,7 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
       const r=el("div","fx"+(i.paid?" paid":""));
       const chk=el("button","chk"+(i.paid?" on":""),"✓"); chk.type="button";
       chk.setAttribute("aria-label", i.paid ? `Batalkan pembayaran ${i.name}` : `Tandai ${i.name} dibayar`);
-      chk.onclick=()=>togglePaid(i, chk);
+      chk.onclick=()=>togglePaid(i);
       const meta=el("div","meta");
       const n=el("div","n"); n.append(el("span",null,i.name));
       if(i.kind==="debt") n.append(el("span","badge warn",`Hutang ${Math.min(i.ref.paidCount + (i.paid?0:1), i.ref.tenor||99)}/${i.ref.tenor||"?"}`));
@@ -1061,23 +1274,49 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     const next={};
     $("budRows").querySelectorAll(".row-edit").forEach(r=>{ const [n,a]=r.querySelectorAll("input"); const k=n.value.trim(); if(k && k!==FIXED_CAT && k!==DEBT_CAT) next[k]=parseAmt(a.value); });
     if(!Object.keys(next).length){ toast("Minimal satu kategori.",true); return; }
-    $("saveBud").disabled=true;
-    try{ await api().saveBudgets(next); budgets=next; $("editBudBtn").click(); toast("Budget tersimpan"); render(); }
-    catch(err){ toast("Gagal menyimpan: "+err.message,true); }
-    finally{ $("saveBud").disabled=false; }
+    $("editBudBtn").click();
+    mutate([{op:"budgets", value:next}]); toast("Budget tersimpan");
   };
 
-  // ---------------- pocket balance updates ----------------
+  // ---------------- changes: shown at once, saved in one request ----------------
   const effect = t => (t && t.wallet) ? (t.type==="income" ? t.amount : -t.amount) : 0;
-  async function applyDeltas(deltas){
-    for(const [id,d] of Object.entries(deltas)){
-      if(!id || !d) continue;
-      const w=wallets.find(x=>x.id===id); if(!w) continue;
-      await api().saveWallet({...w, balance:w.balance+d});
-      w.balance += d;
-    }
-  }
+  const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  const walletOps = deltas => Object.entries(deltas).filter(([id,d])=>id && d).map(([id,delta])=>({op:"adjWallet", id, delta}));
   function addDelta(map, id, d){ if(id) map[id]=(map[id]||0)+d; }
+  const NORM = {wallets:normWallet, debts:normDebt, fixed:normFixed};
+  function applyLocal(ops){
+    const M=monthKey();
+    ops.forEach(o=>{
+      if(o.op==="putTx"){ txs=txs.filter(t=>t.id!==o.tx.id); if(o.tx.date.slice(0,7)===M) txs.push(normTx({...o.tx, updatedAt:new Date().toISOString()})); }
+      else if(o.op==="delTx") txs=txs.filter(t=>t.id!==o.id);
+      else if(o.op==="adjWallet") wallets=wallets.map(w=>w.id===o.id?{...w, balance:w.balance+o.delta}:w);
+      else if(o.op==="put"){ const row=NORM[o.table](o.row); const list={wallets,debts,fixed}[o.table].filter(r=>r.id!==row.id).concat([row]);
+        if(o.table==="wallets") wallets=list; else if(o.table==="debts") debts=list; else fixed=list; }
+      else if(o.op==="del"){ if(o.table==="wallets") wallets=wallets.filter(r=>r.id!==o.id); else if(o.table==="debts") debts=debts.filter(r=>r.id!==o.id); else fixed=fixed.filter(r=>r.id!==o.id); }
+      else if(o.op==="budgets") budgets={...o.value};
+    });
+    txs.sort((a,b)=>b.date.localeCompare(a.date) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  }
+  let commitChain = Promise.resolve(), pending = 0;
+  function syncing(on){ document.body.classList.toggle("saving", on); }
+  function mutate(ops){
+    applyLocal(ops); render();
+    pending++; syncing(true);
+    const M = monthKey();
+    commitChain = commitChain.then(async ()=>{
+      try{
+        const data = await api().commit(ops, M);
+        pending--;
+        if(!pending && M===monthKey()) setData(data);
+      }catch(err){
+        pending--;
+        toast("Gagal menyimpan: "+err.message+". Data dimuat ulang.", true);
+        if(!pending) await load(true);
+      }
+      if(!pending) syncing(false);
+    });
+    return commitChain;
+  }
 
   // ---------------- expense sheet ----------------
   let sheetCat=null, sheetWallet="", editing=null;
@@ -1131,40 +1370,34 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     const add=Number(b.dataset.add); $("fAmount").value = fmtInput(add ? parseAmt($("fAmount").value)+add : 0);
     updateSheetWarn();
   });
-  $("sheet").addEventListener("submit", async e=>{
+  $("sheet").addEventListener("submit", e=>{
     e.preventDefault();
-    if(busy) return;
     const amount=parseAmt($("fAmount").value), date=$("fDate").value;
     if(!amount){ toast("Isi nominal dulu ya",true); $("fAmount").focus(); return; }
     if(!date){ toast("Pilih tanggal",true); return; }
-    const x={id: editing?editing.id:undefined, type: editing?editing.type:"expense", kind: editing?editing.kind:"daily",
+    const x={id: editing?editing.id:uid(), by: editing&&editing.by ? editing.by : myName(), type: editing?editing.type:"expense", kind: editing?editing.kind:"daily",
       amount, date, category: editing && editing.kind!=="daily" ? editing.category : sheetCat, note:$("fNote").value.trim(), wallet:sheetWallet};
-    busy=true; $("saveBtn").disabled=true; $("saveBtn").textContent="Menyimpan…";
-    try{
-      await api().save(x);
-      const deltas={}; if(editing) addDelta(deltas, editing.wallet, -effect(editing)); addDelta(deltas, x.wallet, effect(x));
-      await applyDeltas(deltas);
-      if(x.wallet) store.set("dk.wallet", x.wallet);
-      closeModal();
-      const [y,m]=date.split("-").map(Number); cur={y,m:m-1};
-      await load();
-      const r = budgetStatus().rows.find(r=>r.c===x.category);
-      if(x.kind==="daily" && r && r.level==="red") toast(r.s>r.b ? `⚠️ Budget ${r.c} terlewati ${rp(r.s-r.b)}` : `⚠️ Budget ${r.c} tinggal ${Math.max(0,Math.floor(r.rem*100))}%`, true);
-      else toast(editing?"Transaksi diperbarui":"Tersimpan ✓");
-    }catch(err){ toast("Gagal menyimpan: "+err.message,true); }
-    finally{ busy=false; $("saveBtn").disabled=false; $("saveBtn").textContent="Simpan"; }
+    const deltas={}; if(editing) addDelta(deltas, editing.wallet, -effect(editing)); addDelta(deltas, x.wallet, effect(x));
+    if(x.wallet) store.set("dk.wallet", x.wallet);
+    const wasEditing = !!editing;
+    closeModal();
+    const [y,m]=date.split("-").map(Number);
+    if(y!==cur.y || m-1!==cur.m){ cur={y,m:m-1}; mutate([{op:"putTx", tx:x}, ...walletOps(deltas)]).then(()=>load()); toast("Tersimpan ✓"); return; }
+    mutate([{op:"putTx", tx:x}, ...walletOps(deltas)]);
+    const r = budgetStatus().rows.find(r=>r.c===x.category);
+    if(x.kind==="daily" && r && r.level==="red") toast(r.s>r.b ? `⚠️ Budget ${r.c} terlewati ${rp(r.s-r.b)}` : `⚠️ Budget ${r.c} tinggal ${Math.max(0,Math.floor(r.rem*100))}%`, true);
+    else toast(wasEditing?"Transaksi diperbarui":"Tersimpan ✓");
   });
   confirmBtn($("delBtn"), "Yakin hapus?", async ()=>{
-    try{
-      await api().del(editing.id);
-      const deltas={}; addDelta(deltas, editing.wallet, -effect(editing)); await applyDeltas(deltas);
-      closeModal(); toast(editing.kind==="daily" ? "Transaksi dihapus" : "Dihapus. Status dibayar ikut dibatalkan.");
-      if(editing.kind==="debt"){ // keep the debt count in step
-        const d=debts.find(d=>logParse(d.paidLog).some(([,v])=>v===editing.id));
-        if(d){ const m=logParse(d.paidLog).find(([,v])=>v===editing.id)[0]; await api().saveDebt({...d, paidCount:Math.max(0,d.paidCount-1), paidLog:logRemove(d.paidLog,m,editing.id)}); }
-      }
-      await load();
-    }catch(err){ toast("Gagal menghapus: "+err.message,true); }
+    const t=editing; if(!t) return;
+    const deltas={}; addDelta(deltas, t.wallet, -effect(t));
+    const ops=[{op:"delTx", id:t.id}, ...walletOps(deltas)];
+    if(t.kind==="debt"){ // keep the debt count in step
+      const d=debts.find(d=>logParse(d.paidLog).some(([,v])=>v===t.id));
+      if(d){ const m=logParse(d.paidLog).find(([,v])=>v===t.id)[0]; ops.push({op:"put", table:"debts", row:{...d, paidCount:Math.max(0,d.paidCount-1), paidLog:logRemove(d.paidLog,m,t.id)}}); }
+    }
+    closeModal(); mutate(ops);
+    toast(t.kind==="daily" ? "Transaksi dihapus" : "Dihapus. Status dibayar ikut dibatalkan.");
   });
 
   // ---------------- mark fixed / installment paid ----------------
@@ -1172,30 +1405,23 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     if(isCurrentMonth()) return isoToday();
     return `${cur.y}-${pad(cur.m+1)}-${pad(Math.min(dueDay||1, dim()))}`;
   }
-  async function togglePaid(i, btn){
-    if(busy) return; busy=true; if(btn) btn.disabled=true;
-    const M=monthKey();
-    try{
-      if(!i.paid){
-        const n = i.kind==="debt" ? `Cicilan ${i.name} ke-${i.ref.paidCount+1}` : i.name;
-        const saved = await api().save({type:"expense", kind:i.kind, amount:i.amount, date:payDate(i.dueDay),
-          category: i.kind==="debt"?DEBT_CAT:FIXED_CAT, note:n.slice(0,120), wallet:i.wallet});
-        await applyDeltas({[i.wallet]: -i.amount});
-        if(i.kind==="debt") await api().saveDebt({...i.ref, paidCount:i.ref.paidCount+1, paidLog:logAdd(i.ref.paidLog,M,saved.id)});
-        else await api().saveFixed({...i.ref, paidLog:logAdd(i.ref.paidLog,M,saved.id)});
-        const left = i.kind==="debt" && i.ref.tenor && i.ref.paidCount+1>=i.ref.tenor;
-        toast(left ? `${i.name} lunas! 🎉` : `${i.name} dibayar ✓`);
-      } else {
-        const t = txs.find(t=>t.id===i.txId);
-        await api().del(i.txId);
-        if(t) await applyDeltas({[t.wallet]: -effect(t)});
-        if(i.kind==="debt") await api().saveDebt({...i.ref, paidCount:Math.max(0,i.ref.paidCount-1), paidLog:logRemove(i.ref.paidLog,M,i.txId)});
-        else await api().saveFixed({...i.ref, paidLog:logRemove(i.ref.paidLog,M,i.txId)});
-        toast(`Pembayaran ${i.name} dibatalkan`);
-      }
-      await load();
-    }catch(err){ toast("Gagal: "+err.message,true); }
-    finally{ busy=false; if(btn) btn.disabled=false; }
+  function togglePaid(i){
+    const M=monthKey(), table = i.kind==="debt" ? "debts" : "fixed";
+    if(!i.paid){
+      const id=uid();
+      const n = i.kind==="debt" ? `Cicilan ${i.name} ke-${i.ref.paidCount+1}` : i.name;
+      const tx={id, by:myName(), type:"expense", kind:i.kind, amount:i.amount, date:payDate(i.dueDay),
+        category: i.kind==="debt"?DEBT_CAT:FIXED_CAT, note:n.slice(0,120), wallet:i.wallet};
+      const row = i.kind==="debt" ? {...i.ref, paidCount:i.ref.paidCount+1, paidLog:logAdd(i.ref.paidLog,M,id)} : {...i.ref, paidLog:logAdd(i.ref.paidLog,M,id)};
+      mutate([{op:"putTx", tx}, ...walletOps({[i.wallet]: -i.amount}), {op:"put", table, row}]);
+      const left = i.kind==="debt" && i.ref.tenor && i.ref.paidCount+1>=i.ref.tenor;
+      toast(left ? `${i.name} lunas! 🎉` : `${i.name} dibayar ✓`);
+    } else {
+      const t = txs.find(t=>t.id===i.txId);
+      const row = i.kind==="debt" ? {...i.ref, paidCount:Math.max(0,i.ref.paidCount-1), paidLog:logRemove(i.ref.paidLog,M,i.txId)} : {...i.ref, paidLog:logRemove(i.ref.paidLog,M,i.txId)};
+      mutate([{op:"delTx", id:i.txId}, ...(t ? walletOps({[t.wallet]: -effect(t)}) : []), {op:"put", table, row}]);
+      toast(`Pembayaran ${i.name} dibatalkan`);
+    }
   }
 
   // ---------------- pocket sheet ----------------
@@ -1228,14 +1454,10 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     if(!name){ toast("Isi nama pocket",true); return; }
     const amt=parseAmt($("wBal").value);
     const w={id:wEditing?wEditing.id:undefined, name, type:wTypeSel, balance: wTypeSel==="credit" ? -amt : amt};
-    $("wSave").disabled=true;
-    try{ await api().saveWallet(w); closeModal(); toast(wEditing?"Pocket diperbarui":"Pocket ditambahkan"); await load(); }
-    catch(err){ toast("Gagal menyimpan: "+err.message,true); }
-    finally{ $("wSave").disabled=false; }
+    closeModal(); mutate([{op:"put", table:"wallets", row:{...w, id:w.id||uid()}}]); toast(wEditing?"Pocket diperbarui":"Pocket ditambahkan");
   });
   confirmBtn($("wDel"), "Yakin hapus?", async ()=>{
-    try{ await api().delWallet(wEditing.id); closeModal(); toast("Pocket dihapus"); await load(); }
-    catch(err){ toast("Gagal menghapus: "+err.message,true); }
+    const id=wEditing.id; closeModal(); mutate([{op:"del", table:"wallets", id}]); toast("Pocket dihapus");
   });
 
   // ---------------- fixed expense sheet ----------------
@@ -1258,14 +1480,11 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     const name=$("fxName").value.trim(), amount=parseAmt($("fxAmt").value), dueDay=Math.min(31,parseAmt($("fxDue").value));
     if(!name){ toast("Isi nama",true); return; }
     if(!amount){ toast("Isi nominal",true); return; }
-    $("fxSave").disabled=true;
-    try{ await api().saveFixed({...(fEditing||{}), id:fEditing?fEditing.id:undefined, name, amount, dueDay, wallet:fWallet}); closeModal(); toast(fEditing?"Diperbarui":"Pengeluaran tetap ditambahkan"); await load(); }
-    catch(err){ toast("Gagal menyimpan: "+err.message,true); }
-    finally{ $("fxSave").disabled=false; }
+    const row={paidLog:"", ...(fEditing||{}), id:fEditing?fEditing.id:uid(), name, amount, dueDay, wallet:fWallet};
+    closeModal(); mutate([{op:"put", table:"fixed", row}]); toast(fEditing?"Diperbarui":"Pengeluaran tetap ditambahkan");
   });
   confirmBtn($("fxDel"), "Yakin hapus?", async ()=>{
-    try{ await api().delFixed(fEditing.id); closeModal(); toast("Dihapus. Transaksi yang sudah tercatat tetap ada."); await load(); }
-    catch(err){ toast("Gagal menghapus: "+err.message,true); }
+    const id=fEditing.id; closeModal(); mutate([{op:"del", table:"fixed", id}]); toast("Dihapus. Transaksi yang sudah tercatat tetap ada.");
   });
 
   // ---------------- debt sheet ----------------
@@ -1307,21 +1526,18 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     if(!f.installment){ toast("Isi nominal cicilan",true); return; }
     if(!f.tenor){ toast("Isi jumlah cicilan",true); return; }
     if(f.paidCount>f.tenor){ toast("Sudah dibayar melebihi jumlah cicilan",true); return; }
-    $("dSave").disabled=true;
-    try{ await api().saveDebt({...(dEditing||{}), ...f, id:dEditing?dEditing.id:undefined}); closeModal(); toast(dEditing?"Hutang diperbarui":"Hutang ditambahkan — cicilannya masuk Pengeluaran Tetap"); await load(); }
-    catch(err){ toast("Gagal menyimpan: "+err.message,true); }
-    finally{ $("dSave").disabled=false; }
+    const row={note:"", paidLog:"", ...(dEditing||{}), ...f, id:dEditing?dEditing.id:uid()};
+    closeModal(); mutate([{op:"put", table:"debts", row}]); toast(dEditing?"Hutang diperbarui":"Hutang ditambahkan — cicilannya masuk Pengeluaran Tetap");
   });
   $("payBtn").onclick = async ()=>{
     const d=dEditing; if(!d) return;
     closeModal();
     if(!isCurrentMonth()){ cur={y:now.getFullYear(), m:now.getMonth()}; await load(); }
     const i=fixedItems().find(x=>x.kind==="debt" && x.ref.id===d.id);
-    if(i && !i.paid) await togglePaid(i);
+    if(i && !i.paid) togglePaid(i);
   };
   confirmBtn($("dDel"), "Yakin hapus?", async ()=>{
-    try{ await api().delDebt(dEditing.id); closeModal(); toast("Hutang dihapus"); await load(); }
-    catch(err){ toast("Gagal menghapus: "+err.message,true); }
+    const id=dEditing.id; closeModal(); mutate([{op:"del", table:"debts", id}]); toast("Hutang dihapus");
   });
 
   // ---------------- settings ----------------
@@ -1329,9 +1545,20 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     const s=$("connState"); s.replaceChildren();
     const ok = mode==="sheet" || mode==="claude";
     s.append(el("span","status-dot"+(ok?" ok":"")), mode==="claude"?"Tersimpan":ok?"Terhubung":"Mode demo");
-    $("sheetCard").hidden = mode==="claude";
+    $("sheetCard").hidden = mode==="claude" || !!FB_CFG;
     $("claudeCard").hidden = mode!=="claude";
+    $("fbCard").hidden = !FB_CFG || mode==="claude";
+    $("fbWho").textContent = fbUser ? (fbUser.email || fbUser.displayName || "Akun Google") : "Belum masuk";
+    $("fbState").replaceChildren(el("span","status-dot"+(fbUser?" ok":"")), fbUser?"Masuk":"Belum masuk");
+    $("fbOut").hidden = !fbUser; $("fbIn").hidden = !!fbUser;
+    $("fbHouse").textContent = HOUSE ? `Rumah tangga bersama: ${HOUSE}` : "Data pribadi (hanya akun ini)";
+    $("fbMigrate").hidden = !(HOUSE && fbUser);
   }
+  $("fbIn").onclick = () => { $("login").hidden=false; };
+  $("fbOut").onclick = async () => { stopLive(); clearCache(); try{ await FB.auth.signOut(fauth); }catch(e){} sessionStorageSet("dk.demo",""); $("login").hidden=false; toast("Kamu sudah keluar"); };
+  $("loginBtn").onclick = signIn;
+  $("fbMigrate").onclick = migrateToHousehold;
+  $("loginDemo").onclick = () => { sessionStorageSet("dk.demo","1"); $("login").hidden=true; mode="demo"; go("home"); load(); };
   $("connForm").addEventListener("submit", async e=>{
     e.preventDefault();
     const url=$("cUrl").value.trim(), token=$("cTok").value.trim();
@@ -1342,26 +1569,41 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
     catch(err){ conf=prev.conf; mode=prev.mode; toast("Gagal terhubung: "+err.message,true); }
   });
   $("demoBtn").onclick=()=>{ mode="demo"; toast("Mode demo aktif"); go("home"); load(); };
-  $("disconnectBtn").onclick=()=>{ store.del("dk.url"); store.del("dk.token"); conf={url:DEFAULT_SCRIPT_URL,token:""}; mode="demo"; $("cUrl").value=conf.url; $("cTok").value=""; toast("Koneksi dihapus dari browser ini"); load(); };
+  $("disconnectBtn").onclick=()=>{ clearCache(); store.del("dk.url"); store.del("dk.token"); conf={url:DEFAULT_SCRIPT_URL,token:""}; mode="demo"; $("cUrl").value=conf.url; $("cTok").value=""; toast("Koneksi dihapus dari browser ini"); load(); };
 
   // ---------------- load ----------------
-  async function load(){
-    const my=++reqSeq;
-    $("app").classList.add("loading"); render();
+  // last data per month, kept in this browser (Google Sheets mode) so the app opens instantly
+  const cacheKey = m => `dk.cache.${mode}.${fbUser?fbUser.uid:""}.${m}`;
+  function clearCache(){ try{ Object.keys(localStorage).filter(k=>k.startsWith("dk.cache.")).forEach(k=>localStorage.removeItem(k)); }catch(e){} }
+  function setData(data){
+    if(data.budgets && Object.keys(data.budgets).length) budgets = data.budgets;
+    txs = (data.expenses||[]).map(normTx)
+      .sort((a,b)=>b.date.localeCompare(a.date) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    wallets = (data.wallets||[]).map(normWallet);
+    debts = (data.debts||[]).map(normDebt);
+    fixed = (data.fixed||[]).map(normFixed);
+    if(mode==="sheet" || mode==="firebase"){ try{ localStorage.setItem(cacheKey(monthKey()), JSON.stringify({...data, at:Date.now()})); }catch(e){} }
+    render();
+  }
+  async function load(force){
+    const my=++reqSeq, M=monthKey();
+    let shown=false;
+    if((mode==="sheet" || mode==="firebase") && !force){
+      try{ const c=JSON.parse(localStorage.getItem(cacheKey(M))||"null"); if(c){ setData(c); shown=true; } }catch(e){}
+    }
+    if(!shown){ txs=[]; }
+    $("app").classList.toggle("loading", !shown); syncing(true); render();
+    if(mode==="firebase" && FB && fbUser){ if(force || liveMonth!==M) startLive(); else if(liveReady()) setData({...live}); return; }
     try{
-      const data = await api().list(monthKey());
-      if(my!==reqSeq) return;
-      if(data.budgets && Object.keys(data.budgets).length) budgets = data.budgets;
-      txs = (data.expenses||[]).map(normTx)
-        .sort((a,b)=>b.date.localeCompare(a.date) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
-      wallets = (data.wallets||[]).map(normWallet);
-      debts = (data.debts||[]).map(normDebt);
-      fixed = (data.fixed||[]).map(normFixed);
+      await commitChain;
+      const data = await api().list(M);
+      if(my!==reqSeq || M!==monthKey()) return;
+      if(!pending) setData(data);
     }catch(err){
       if(my!==reqSeq) return;
       toast("Gagal memuat data: "+err.message,true);
     }
-    $("app").classList.remove("loading"); render();
+    if(my===reqSeq){ $("app").classList.remove("loading"); if(!pending) syncing(false); render(); }
   }
 
   // ---------------- init ----------------
@@ -1374,6 +1616,15 @@ h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
       try{ cdb = await window.claude.use("db"); }catch(e){ cdb = null; }
       if(cdb) mode = "claude";
       else toast("Penyimpanan tidak tersedia — mode demo", true);
+      load(); return;
+    }
+    if(FB_CFG){
+      mode = "demo";
+      if(sessionStorageGet("dk.demo")!=="1") $("login").hidden = false;
+      else load();
+      try{ await initFirebase(); }
+      catch(err){ $("loginErr").textContent = "Tidak bisa memuat Firebase: " + (err.message||err) + ". Periksa koneksi internet."; }
+      return;
     }
     load();
   })();
