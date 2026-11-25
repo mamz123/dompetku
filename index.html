@@ -468,6 +468,29 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
 .tf-feein input{font-size:20px}
 #tFeeQuick{justify-content:flex-start;margin:0}
 .tf-sum{min-height:18px}
+
+/* kategori */
+.cchip.add{border-style:dashed;color:var(--muted)}
+.bud.tap{cursor:pointer}
+.ksheet-list{max-height:46vh;overflow:auto}
+.ksheet-list .chev,.ke-back{color:var(--muted)}
+#kesheet h3{gap:8px}
+.ke-back{font-size:22px;line-height:1}
+.ke-head{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.ke-head .ke-prev{width:48px;height:48px;font-size:24px;flex:none}
+.ke-head .input{flex:1;margin:0}
+.emo-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:5px;margin-bottom:8px}
+.emo{aspect-ratio:1;min-width:0;padding:0;border-radius:10px;background:var(--surface-2);font-size:18px;display:flex;align-items:center;justify-content:center;border:1.5px solid transparent}
+.emo.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 22%,var(--surface))}
+.ke-emoji{margin-bottom:12px}
+/* pengingat */
+#rList{max-height:40vh;overflow:auto}
+#rList .row{cursor:default}
+#rList a.pay{text-decoration:none;white-space:nowrap}
+.r-how{font-size:13px;line-height:1.45;color:var(--ink);background:var(--surface-2);border-radius:14px;padding:10px 12px;margin:10px 0}
+.r-how p{margin:0 0 6px}
+.r-how .r-note{color:var(--muted);margin:0}
+#rList .row .s{white-space:normal;overflow:visible;text-overflow:clip}
 </style>
 </head>
 <body>
@@ -589,6 +612,11 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <div class="meta"><div class="n">Hutang</div><div class="s money" id="debtLinkSub"></div></div>
       <span class="chev">›</span>
     </button>
+    <button class="link-card" id="remindBtn" type="button">
+      <div class="ic" style="background:var(--surface-2)">🔔</div>
+      <div class="meta"><div class="n">Pengingat jatuh tempo</div><div class="s" id="remindSub"></div></div>
+      <span class="chev">›</span>
+    </button>
     <button class="text-btn" id="addFixedBtn" type="button">+ Tambah tagihan rutin</button>
     <p class="hint center">Cicilan hutang otomatis masuk daftar ini setiap bulan sampai lunas.</p>
   </section>
@@ -602,14 +630,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <div class="sum-f"><span class="money" id="budFootL"></span><span class="money" id="budFootR"></span></div>
     </div>
     <div class="list" id="budList"></div>
-    <div id="budEdit" class="list" style="padding:12px" hidden>
-      <div id="budRows"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn" id="addCat" type="button">+ Kategori</button>
-        <button class="btn primary" id="saveBud" type="button" style="flex:1">Simpan budget</button>
-      </div>
-    </div>
-    <button class="text-btn" id="editBudBtn" type="button">Atur budget</button>
+    <button class="text-btn" id="editBudBtn" type="button">Atur kategori &amp; budget</button>
   </section>
 
   <!-- HUTANG -->
@@ -722,6 +743,51 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   </div>
 </form>
 
+<!-- pengingat -->
+<div class="sheet" id="rsheet" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+  <div class="grab"></div>
+  <h3><span id="rTitle">Pengingat jatuh tempo</span><button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h3>
+  <p class="hint" style="margin:-4px 2px 12px">Pengingat dipasang di kalender HP, jadi tetap muncul walau Dompetku tidak dibuka.</p>
+  <div class="list" id="rList"></div>
+  <div class="r-how">
+    <p><b>Google Calendar (Android):</b> ketuk <b>+ Google</b> di tiap tagihan, lalu Simpan. Atur notifikasinya ke "1 hari sebelumnya".</p>
+    <p><b>iPhone / Samsung / Outlook:</b> unduh semua sekaligus, lalu buka file <i>.ics</i>-nya. Sudah berisi notifikasi H-1 jam 09.00 dan di hari-H jam 08.00.</p>
+    <p class="r-note">Kalender tidak tahu kalau tagihan sudah dibayar. Kalau nominal atau tanggal berubah, hapus acara lama di kalender lalu tambahkan lagi.</p>
+  </div>
+  <div class="sheet-actions"><button type="button" class="btn primary" id="rIcs">Unduh semua ke kalender</button></div>
+</div>
+
+<!-- kategori: daftar -->
+<div class="sheet" id="ksheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
+  <div class="grab"></div>
+  <h3><span id="kTitle">Kategori &amp; Budget</span><button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h3>
+  <div class="list ksheet-list" id="kList"></div>
+  <p class="hint">Ketuk kategori untuk mengganti nama, ikon, atau budget bulanannya.</p>
+  <div class="sheet-actions"><button type="button" class="btn primary" id="kAdd">+ Kategori baru</button></div>
+</div>
+
+<!-- kategori: ubah / baru -->
+<form class="sheet" id="kesheet" role="dialog" aria-modal="true" aria-labelledby="keTitle">
+  <div class="grab"></div>
+  <h3><button type="button" class="icon-btn ke-back" id="keBack" aria-label="Kembali">‹</button><span id="keTitle">Kategori Baru</span><button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h3>
+  <div class="ke-head">
+    <div class="ic ke-prev" id="kePrev">📦</div>
+    <input class="input" id="keName" maxlength="40" placeholder="Nama kategori, mis. Jajan Anak" autocomplete="off">
+  </div>
+  <div class="field-lbl">Ikon</div>
+  <div class="emo-grid" id="keGrid"></div>
+  <input class="input ke-emoji" id="keEmoji" maxlength="8" placeholder="…atau ketik/tempel emoji lain" autocomplete="off">
+  <div class="amount-box">
+    <label for="keBud">Budget per bulan (opsional)</label>
+    <div class="amount-row"><span>Rp</span><input id="keBud" class="mono" inputmode="numeric" placeholder="0" autocomplete="off"></div>
+  </div>
+  <p class="hint" id="keHint"></p>
+  <div class="sheet-actions">
+    <button type="button" class="btn danger" id="keDel" hidden>Hapus</button>
+    <button type="submit" class="btn primary">Simpan</button>
+  </div>
+</form>
+
 <!-- pindah saldo -->
 <form class="sheet" id="tsheet" role="dialog" aria-modal="true" aria-labelledby="tTitle">
   <div class="grab"></div>
@@ -733,7 +799,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     <label class="sel"><small>Ke</small><select id="tTo" aria-label="Pocket tujuan"></select></label>
   </div>
   <div id="tFeeBox" class="tf-fee" hidden>
-    <label class="tf-check"><input type="checkbox" id="tFeeOn"> <span>Ada biaya admin <small>(e-wallet)</small></span></label>
+    <label class="tf-check"><input type="checkbox" id="tFeeOn"> <span>Ada biaya admin <small>(opsional)</small></span></label>
     <div id="tFeeRow" hidden>
       <div class="amount-row tf-feein"><span>Rp</span><input id="tFee" class="num" inputmode="numeric" placeholder="0" autocomplete="off" aria-label="Biaya admin"></div>
       <div class="quick" id="tFeeQuick">
@@ -892,6 +958,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   // ---------------- state ----------------
   let cur = {y:now.getFullYear(), m:now.getMonth()};
   let budgets = {...EXPENSE_DEFAULTS};
+  let catIcons = {}, catAlias = {}; // custom category icons; old name -> new name after a rename
+  function resolveCat(c){ let n=0; while(Object.prototype.hasOwnProperty.call(catAlias,c) && n++<20) c=catAlias[c]; return c; }
+  const parseMeta = d => { const m={icons:{}, alias:{}}; if(d){ ["icons","alias"].forEach(k=>{ const v=d[k]; if(v && typeof v==="object") Object.entries(v).forEach(([a,b])=>{ if(a && b) m[k][String(a)]=String(b); }); }); } return m; };
   let txs = [], wallets = [], debts = [], fixed = [], invest = [];
   let view = "home", planTab = "budget", kindFilter = "", query = "";
   let conf = {url: store.get("dk.url") || DEFAULT_SCRIPT_URL, token: store.get("dk.token")};
@@ -907,7 +976,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   // ---------------- normalizers ----------------
   const kindOf = t => t.type==="transfer" ? "transfer" : t.kind==="fixed"||t.kind==="debt" ? t.kind : (t.category===FIXED_CAT ? "fixed" : t.category===DEBT_CAT ? "debt" : "daily");
   const normTx = t => { const o={...t, id:String(t.id), type:t.type==="income"?"income":t.type==="transfer"?"transfer":"expense", to:String(t.to||""), amount:Number(t.amount)||0,
-    category:String(t.category||"Lainnya"), note:String(t.note||""), wallet:String(t.wallet||""), date:String(t.date||"")}; o.kind=kindOf(o); return o; };
+    category:resolveCat(String(t.category||"Lainnya")), note:String(t.note||""), wallet:String(t.wallet||""), date:String(t.date||"")}; o.kind=kindOf(o); return o; };
   const normWallet = w => ({id:String(w.id), name:String(w.name||"Pocket"), type:wType(w.type)[0], balance:Number(w.balance)||0});
   const normDebt = d => ({id:String(d.id), name:String(d.name||"Hutang"), lender:String(d.lender||""),
     total:Number(d.total)||0, installment:Number(d.installment)||0, tenor:Number(d.tenor)||0,
@@ -942,7 +1011,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   };
 
   const demo = (function(){
-    let rows = [], bud = {...EXPENSE_DEFAULTS}, n = 0;
+    let rows = [], bud = {...EXPENSE_DEFAULTS}, n = 0, meta = {icons:{}, alias:{}};
     const mk = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
     const d = k => { const t=new Date(now); t.setDate(Math.max(1, now.getDate()-k)); return isoDate(t); };
     const dueDate = day => `${mk}-${pad(Math.min(day, now.getDate()))}`;
@@ -979,12 +1048,12 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
           else if(o.op==="adjWallet") wal=wal.map(w=>w.id===o.id?{...w, balance:w.balance+o.delta}:w);
           else if(o.op==="put"){ setT(o.table, T[o.table]().filter(r=>r.id!==o.row.id).concat([{...o.row}])); }
           else if(o.op==="del") setT(o.table, T[o.table]().filter(r=>r.id!==o.id));
-          else if(o.op==="budgets") bud={...o.value};
+          else if(o.op==="budgets"){ bud={...o.value}; if(o.icons) meta={icons:{...o.icons}, alias:{...o.alias}}; }
         });
         await new Promise(r=>setTimeout(r,120));
         return this.list(month);
       },
-      async list(month){ return {expenses: rows.filter(r=>r.month===month).map(r=>({...r})), budgets:{...bud},
+      async list(month){ return {expenses: rows.filter(r=>r.month===month).map(r=>({...r})), budgets:{...bud}, catMeta:{icons:{...meta.icons}, alias:{...meta.alias}},
         wallets: wal.map(w=>({...w})), debts: dbt.map(x=>({...x})), fixed: fx.map(x=>({...x})), invest: inv.map(x=>({...x}))}; },
       async save(x){ let e; [rows,e]=up(rows,{...x, month:x.date.slice(0,7), updatedAt:String(Date.now())},"demo"); return e; },
       async del(id){ rows=rows.filter(r=>r.id!==id); },
@@ -1021,7 +1090,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
         }
         else if(o.op==="put") await cSave(o.table, o.row.id, TABLE_BODY[o.table](o.row));
         else if(o.op==="del") await cdb.collection(o.table).doc(o.id).delete();
-        else if(o.op==="budgets") await claudeApi.saveBudgets(o.value);
+        else if(o.op==="budgets") await claudeApi.saveBudgets(o.value, o);
       }
       return claudeApi.list(month);
     },
@@ -1038,13 +1107,13 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       const budgets = {};
       if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>budgets[String(k)]=Number(v)||0);
       const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
-      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
+      return {expenses: docs(snap), budgets, catMeta: parseMeta(bs.exists ? bs.data() : null), wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
     },
     save: x => cSave("tx", x.id, {date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""),
         amount:x.amount, category:String(x.category||"Lainnya").slice(0,40), note:String(x.note||"").slice(0,120),
         wallet:String(x.wallet||""), kind:x.kind||"daily"}),
     async del(id){ await cdb.collection("tx").doc(id).delete(); },
-    async saveBudgets(b){ await cdb.doc("settings/budgets").set({categories:b, updatedAt:stamp()}); },
+    async saveBudgets(b, m){ await cdb.doc("settings/budgets").set({categories:b, icons:(m&&m.icons)||catIcons, alias:(m&&m.alias)||catAlias, updatedAt:stamp()}); },
     saveWallet: w => cSave("wallets", w.id, {name:String(w.name).slice(0,40), type:w.type, balance:Number(w.balance)||0}),
     async delWallet(id){ await cdb.collection("wallets").doc(id).delete(); },
     saveDebt: d => cSave("debts", d.id, {name:String(d.name).slice(0,40), lender:String(d.lender||"").slice(0,40), total:d.total, installment:d.installment,
@@ -1077,7 +1146,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     liveUnsub.push(f.onSnapshot(f.doc(fdb, fbPath("settings/budgets")), s=>{
       const c = s.exists() ? (s.data()||{}).categories : null, b={};
       if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>b[String(k)]=Number(v)||0);
-      live.budgets=b; push(); }, fbError));
+      live.budgets=b; live.catMeta=parseMeta(s.exists() ? s.data() : null); push(); }, fbError));
     ["wallets","debts","fixed","invest"].forEach(n=>liveUnsub.push(f.onSnapshot(fbCol(n), s=>{ live[n]=docs(s); push(); }, fbError)));
   }
   function fbError(err){
@@ -1105,7 +1174,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       const c = bs.exists() ? (bs.data()||{}).categories : null;
       const budgets = {};
       if(c && typeof c==="object") Object.entries(c).forEach(([k,v])=>budgets[String(k)]=Number(v)||0);
-      return {expenses: docs(snap), budgets, wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
+      return {expenses: docs(snap), budgets, catMeta: parseMeta(bs.exists() ? bs.data() : null), wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
     },
     async commit(ops, month){
       const f=FB.fs, b=f.writeBatch(fdb), at=new Date().toISOString();
@@ -1116,7 +1185,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
         else if(o.op==="adjWallet"){ if(o.id && o.delta && known.has(o.id)) b.update(f.doc(fbCol("wallets"), o.id), {balance:f.increment(o.delta), updatedAt:at}); }
         else if(o.op==="put") b.set(f.doc(fbCol(o.table), o.row.id), {...TABLE_BODY[o.table](o.row), updatedAt:at});
         else if(o.op==="del") b.delete(f.doc(fbCol(o.table), o.id));
-        else if(o.op==="budgets") b.set(f.doc(fdb, fbPath("settings/budgets")), {categories:o.value, updatedAt:at});
+        else if(o.op==="budgets") b.set(f.doc(fdb, fbPath("settings/budgets")), {categories:o.value, icons:o.icons||catIcons, alias:o.alias||catAlias, updatedAt:at});
       });
       try{ await b.commit(); }
       catch(err){ if(err && err.code==="permission-denied") fbError(err); throw err; }
@@ -1204,7 +1273,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   function iconFor(cat){
     const dark = document.documentElement.dataset.theme==="dark";
     const idx = [...String(cat)].reduce((a,c)=>a+c.charCodeAt(0),0) % TINTS.length;
-    return {emoji: ICONS[cat] || String(cat).trim().charAt(0).toUpperCase() || "•", bg:(dark?TINTS_D:TINTS)[idx]};
+    return {emoji: catIcons[cat] || ICONS[cat] || String(cat).trim().charAt(0).toUpperCase() || "•", bg:(dark?TINTS_D:TINTS)[idx]};
   }
   function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
   function icEl(key, emoji){ const i=iconFor(key); const d=el("div","ic",emoji||i.emoji); d.style.background=i.bg; return d; }
@@ -1585,6 +1654,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       top.append(icEl(r.c), el("div","n",r.c), rt);
       const bar=el("div","bar"), f=el("i",cls); f.style.width=(r.b?Math.min(100,r.s/r.b*100):0)+"%"; bar.append(f);
       w.append(top,bar); list.append(w);
+      if(r.c in budgets){ w.classList.add("tap"); w.onclick=()=>openCatEdit(r.c); }
     });
   }
 
@@ -1643,6 +1713,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const total=F.reduce((a,i)=>a+i.amount,0), paid=F.filter(i=>i.paid), paidSum=paid.reduce((a,i)=>a+i.amount,0);
     const unpaid=F.filter(i=>!i.paid).sort((a,b)=>((dueInfo(a)||{diff:99}).diff)-((dueInfo(b)||{diff:99}).diff));
     $("billLeft").textContent = rp(total-paidSum);
+    const rc=reminderItems().filter(i=>i.start).length;
+    $("remindSub").textContent = rc ? `${rc} tagihan & cicilan · diingatkan H-1 di kalender HP` : "Tambahkan tagihan atau cicilan dengan tanggal jatuh tempo";
     $("billBar").style.width = (total? paidSum/total*100 : 0)+"%";
     $("billFootL").textContent = `${paid.length} dari ${F.length} lunas · ${rpShort(paidSum)}`;
     $("billFootR").textContent = `Total ${rpShort(total)}`;
@@ -1696,27 +1768,168 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     done.forEach(x=>dl.append(card(x)));
   }
 
-  // ---------------- budget editing ----------------
-  function editRow(name, amt){
-    const r=el("div","row-edit");
-    const n=el("input","input"); n.value=name; n.placeholder="Kategori"; n.maxLength=40;
-    const a=el("input","input mono"); a.inputMode="numeric"; a.placeholder="Budget"; a.value=fmtInput(amt); moneyInput(a);
-    const x=el("button","icon-btn","✕"); x.type="button"; x.title="Hapus"; x.onclick=()=>r.remove();
-    r.append(n,a,x); return r;
+  // ---------------- pengingat jatuh tempo (kalender HP) ----------------
+  const ymd = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  function reminderItems(){
+    const M=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+    const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const at=(y,m,day)=>new Date(y,m,Math.min(day,new Date(y,m+1,0).getDate()));
+    const nextDue=(day, paidNow)=>{ let n=at(today.getFullYear(),today.getMonth(),day); if(paidNow || n<today) n=at(today.getFullYear(),today.getMonth()+1,day); return n; };
+    const out=[];
+    fixed.forEach(f=>out.push({kind:"fixed", id:f.id, name:f.name, amount:f.amount, dueDay:f.dueDay, count:0,
+      start: f.dueDay ? nextDue(f.dueDay, !!logGet(f.paidLog,M)) : null}));
+    debts.forEach(d=>{
+      const st=debtStats(d); if(st.done) return;
+      const left = d.tenor ? Math.max(0,d.tenor-d.paidCount) : (d.installment ? Math.ceil(st.remaining/d.installment) : 0);
+      out.push({kind:"debt", id:d.id, name:d.name, amount:d.installment, dueDay:d.dueDay, count:left,
+        start: d.dueDay ? nextDue(d.dueDay, !!logGet(d.paidLog,M)) : null});
+    });
+    return out.sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
   }
-  $("editBudBtn").onclick=()=>{
-    const open=$("budEdit").hidden;
-    if(open) $("budRows").replaceChildren(...Object.entries(budgets).map(([n,a])=>editRow(n,a)));
-    $("budEdit").hidden=!open; $("budList").hidden=open; $("editBudBtn").textContent=open?"Batal":"Atur budget";
+  function rrule(i){
+    const d=i.dueDay;
+    const by = d<=28 ? `BYMONTHDAY=${d}` : `BYMONTHDAY=${Array.from({length:d-27},(_,k)=>28+k).join(",")};BYSETPOS=-1`;
+    return `RRULE:FREQ=MONTHLY;${by}${i.count?`;COUNT=${i.count}`:""}`;
+  }
+  const remTitle = i => `Bayar ${i.name} · ${rp(i.amount)}`;
+  const remDesc = i => i.kind==="debt" ? `Cicilan dari Dompetku${i.count?` (sisa ${i.count}x)`:""}. Tandai "Bayar" di Dompetku setelah dibayar.` : `Tagihan rutin dari Dompetku. Tandai "Bayar" di Dompetku setelah dibayar.`;
+  function gcalUrl(i){
+    const end=new Date(i.start); end.setDate(end.getDate()+1);
+    const q=new URLSearchParams({action:"TEMPLATE", text:remTitle(i), dates:`${ymd(i.start)}/${ymd(end)}`, details:remDesc(i), recur:rrule(i)});
+    return "https://calendar.google.com/calendar/render?"+q.toString();
+  }
+  function buildIcs(items){
+    const esc = t => String(t).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+    const stamp = new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+    const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Dompetku//Pengingat//ID","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Tagihan Dompetku"];
+    items.forEach(i=>{
+      const end=new Date(i.start); end.setDate(end.getDate()+1);
+      L.push("BEGIN:VEVENT", `UID:dompetku-${i.kind}-${i.id}@dompetku`, `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${ymd(i.start)}`, `DTEND;VALUE=DATE:${ymd(end)}`, rrule(i),
+        `SUMMARY:${esc(remTitle(i))}`, `DESCRIPTION:${esc(remDesc(i))}`, "TRANSP:TRANSPARENT",
+        "BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${esc("Besok: "+remTitle(i))}`,"TRIGGER:-PT15H","END:VALARM",
+        "BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${esc("Hari ini: "+remTitle(i))}`,"TRIGGER:PT8H","END:VALARM",
+        "END:VEVENT");
+    });
+    L.push("END:VCALENDAR");
+    return L.join("\r\n")+"\r\n";
+  }
+  async function saveFile(filename, text, type){
+    if(mode==="claude" && window.claude && typeof window.claude.use==="function"){
+      let dl=null; try{ dl=await window.claude.use("downloads"); }catch(e){}
+      if(dl){ try{ await dl.save({filename, data:new Blob([text],{type})}); return true; }
+        catch(e){ try{ await dl.save({filename, data:text}); return true; }catch(e2){ toast("Unduhan dibatalkan",true); return false; } } }
+    }
+    const url=URL.createObjectURL(new Blob([text],{type})), a=el("a");
+    a.href=url; a.download=filename; document.body.append(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000); return true;
+  }
+  function openReminders(){
+    const items=reminderItems(), box=$("rList"); box.replaceChildren();
+    if(!items.length) box.append(emptyRow("Belum ada tagihan atau cicilan", "Tambahkan tagihan rutin atau hutang dulu."));
+    items.forEach(i=>{
+      const r=el("div","row");
+      const meta=el("div","meta");
+      meta.append(el("div","n",i.name), subLine([rpShort(i.amount), i.dueDay?`tiap tgl ${i.dueDay}`:"", i.kind==="debt"&&i.count?`sisa ${i.count}x`:"", i.start?`mulai ${i.start.getDate()} ${MSHORT[i.start.getMonth()]}`:""]));
+      r.append(i.kind==="debt"?icEl(i.name,"💳"):icEl(i.name, fixedIcon(i.name)), meta);
+      if(i.start){ const a=el("a","pay ghost","+ Google"); a.href=gcalUrl(i); a.target="_blank"; a.rel="noopener"; a.title="Tambah ke Google Calendar"; r.append(a); }
+      else { const b=el("button","pay ghost","Atur tgl"); b.type="button"; b.onclick=()=> i.kind==="fixed" ? openFixed(fixed.find(f=>f.id===i.id)) : openDebt(debts.find(d=>d.id===i.id)); r.append(b); }
+      box.append(r);
+    });
+    const ok=items.filter(i=>i.start);
+    $("rIcs").disabled = !ok.length;
+    $("rIcs").textContent = ok.length ? `Unduh semua ke kalender (${ok.length})` : "Unduh semua ke kalender";
+    openModal("rsheet");
+  }
+  $("remindBtn").onclick=openReminders;
+  $("rIcs").onclick=async()=>{
+    const items=reminderItems().filter(i=>i.start); if(!items.length) return;
+    if(await saveFile("tagihan-dompetku.ics", buildIcs(items), "text/calendar")) toast("File kalender diunduh. Buka file-nya untuk menambahkan.");
   };
-  $("addCat").onclick=()=>$("budRows").append(editRow("",0));
-  $("saveBud").onclick=async()=>{
-    const next={};
-    $("budRows").querySelectorAll(".row-edit").forEach(r=>{ const [n,a]=r.querySelectorAll("input"); const k=n.value.trim(); if(k && k!==FIXED_CAT && k!==DEBT_CAT) next[k]=parseAmt(a.value); });
-    if(!Object.keys(next).length){ toast("Minimal satu kategori.",true); return; }
-    $("editBudBtn").click();
-    mutate([{op:"budgets", value:next}]); toast("Budget tersimpan");
-  };
+
+  // ---------------- kategori & budget ----------------
+  const CAT_EMOJI = ["🍜","🍔","☕","🧋","🛒","🛍️","👕","🛵","🚗","⛽","🚌","✈️","🎬","🎮","🎵","🏖️","💊","🏥","🏋️","💇","🧴","📚","🎓","🏠","💡","📶","📱","🐶","👶","🎁","🤲","🐷","💼","🔧","🏧","📦"];
+  let kEditing=null, kIcon="", kReturn="";
+  function renderCatList(){
+    const box=$("kList"); box.replaceChildren();
+    Object.entries(budgets).forEach(([c,b])=>{
+      const r=el("button","row"); r.type="button";
+      const meta=el("div","meta"); meta.append(el("div","n",c), el("div","s", b ? `budget ${rpShort(b)}/bulan` : "tanpa budget"));
+      r.append(icEl(c), meta, el("span","chev","›"));
+      r.onclick=()=>openCatEdit(c);
+      box.append(r);
+    });
+  }
+  function openCats(){ renderCatList(); openModal("ksheet"); }
+  function renderEmojiGrid(){
+    const g=$("keGrid"); g.replaceChildren();
+    CAT_EMOJI.forEach(e=>{ const b=el("button","emo"+(e===kIcon?" on":""), e); b.type="button"; b.setAttribute("aria-label","Ikon "+e);
+      b.onclick=()=>{ kIcon=e; $("keEmoji").value=""; renderEmojiGrid(); updateCatPreview(); }; g.append(b); });
+  }
+  function updateCatPreview(){
+    const n=$("keName").value.trim() || "Kategori";
+    const i=iconFor(n), p=$("kePrev");
+    p.textContent = kIcon || i.emoji; p.style.background=i.bg;
+  }
+  function openCatEdit(c, ret){
+    kEditing = c || null; kReturn = ret || "";
+    kIcon = c ? iconFor(c).emoji : "";
+    if(c && !catIcons[c] && !ICONS[c]) kIcon=""; // letter fallback: no icon chosen yet
+    $("keTitle").textContent = c ? "Ubah Kategori" : "Kategori Baru";
+    $("keName").value = c || "";
+    $("keEmoji").value = "";
+    $("keBud").value = c && budgets[c] ? fmtInput(budgets[c]) : "";
+    $("keDel").hidden = !c; resetConfirm($("keDel"),"Hapus");
+    $("keHint").textContent = c ? "Ganti nama tidak menghapus riwayat: transaksi lama ikut pindah ke nama baru." : "Kosongkan budget kalau kategori ini tidak perlu dibatasi.";
+    renderEmojiGrid(); updateCatPreview();
+    openModal("kesheet");
+    if(!c) setTimeout(()=>$("keName").focus(), 250);
+  }
+  function backFromCat(name){
+    if(kReturn==="tx"){ openModal("sheet"); if(name){ sheetCat=name; } renderCats(); updateSheetWarn();
+      const on=document.querySelector("#catGrid .cchip.on"); if(on) on.scrollIntoView({block:"nearest", inline:"center"}); }
+    else openCats();
+  }
+  $("keName").addEventListener("input", updateCatPreview);
+  $("keEmoji").addEventListener("input", ()=>{ const v=[...$("keEmoji").value.trim()].slice(0,2).join(""); kIcon=v; renderEmojiGrid(); updateCatPreview(); });
+  moneyInput($("keBud"));
+  $("keBack").onclick=()=>backFromCat(null);
+  $("kAdd").onclick=()=>openCatEdit(null);
+  $("kesheet").addEventListener("submit", e=>{
+    e.preventDefault();
+    const name=$("keName").value.trim().replace(/\s+/g," ").slice(0,40), old=kEditing;
+    if(!name){ toast("Isi nama kategori",true); $("keName").focus(); return; }
+    if(name===FIXED_CAT || name===DEBT_CAT || name==="Pindah Saldo"){ toast("Nama ini dipakai sistem, pilih nama lain",true); return; }
+    const renamed = old && name!==old;
+    if((!old || renamed) && Object.prototype.hasOwnProperty.call(budgets,name)){ toast(`Kategori "${name}" sudah ada`,true); return; }
+    if((!old || renamed) && catAlias[name] && resolveCat(name)!==old){ toast(`"${name}" pernah diganti jadi "${resolveCat(name)}". Pilih nama lain.`,true); return; }
+    const amt=parseAmt($("keBud").value);
+    const value={};
+    if(old) Object.keys(budgets).forEach(k=>{ value[k===old?name:k]=k===old?amt:budgets[k]; });
+    else { Object.assign(value,budgets); value[name]=amt; }
+    const icons={...catIcons}, alias={...catAlias};
+    if(old) delete icons[old];
+    if(kIcon && kIcon!==ICONS[name]) icons[name]=kIcon; else delete icons[name];
+    if(renamed){
+      Object.keys(alias).forEach(k=>{ if(resolveCat(k)===old) alias[k]=name; });
+      alias[old]=name; delete alias[name];
+      Object.keys(alias).forEach(k=>{ if(alias[k]===k) delete alias[k]; });
+    }
+    mutate([{op:"budgets", value, icons, alias}]);
+    toast(!old ? `Kategori ${name} ditambahkan` : renamed ? `${old} diganti jadi ${name}` : "Kategori diperbarui");
+    backFromCat(name);
+  });
+  confirmBtn($("keDel"), "Yakin hapus?", async ()=>{
+    const old=kEditing; if(!old) return;
+    if(Object.keys(budgets).length<=1){ toast("Minimal satu kategori",true); return; }
+    const value={...budgets}; delete value[old];
+    const icons={...catIcons}; delete icons[old];
+    mutate([{op:"budgets", value, icons, alias:{...catAlias}}]);
+    if(sheetCat===old) sheetCat=null;
+    toast(`Kategori ${old} dihapus. Transaksi lamanya tetap ada.`);
+    backFromCat(null);
+  });
+  $("editBudBtn").onclick=openCats;
 
   // ---------------- changes: shown at once, saved in one request ----------------
   const effect = t => (t && t.wallet) ? (t.type==="income" ? t.amount : -t.amount) : 0;
@@ -1739,7 +1952,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       else if(o.op==="put"){ const row=NORM[o.table](o.row); const list={wallets,debts,fixed,invest}[o.table].filter(r=>r.id!==row.id).concat([row]);
         if(o.table==="wallets") wallets=list; else if(o.table==="debts") debts=list; else if(o.table==="invest") invest=list; else fixed=list; }
       else if(o.op==="del"){ if(o.table==="wallets") wallets=wallets.filter(r=>r.id!==o.id); else if(o.table==="debts") debts=debts.filter(r=>r.id!==o.id); else if(o.table==="invest") invest=invest.filter(r=>r.id!==o.id); else fixed=fixed.filter(r=>r.id!==o.id); }
-      else if(o.op==="budgets") budgets={...o.value};
+      else if(o.op==="budgets"){ budgets={...o.value};
+        if(o.icons){ catIcons={...o.icons}; catAlias={...o.alias};
+          txs=txs.map(normTx); Object.keys(histCache).forEach(k=>{ histCache[k]=histCache[k].map(normTx); }); } }
     });
     txs.sort((a,b)=>b.date.localeCompare(a.date) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
   }
@@ -1784,6 +1999,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       b.onclick=()=>{ sheetCat=c; renderCats(); updateSheetWarn(); };
       g.append(b);
     });
+    const add=el("button","cchip add","＋ Baru"); add.type="button"; add.setAttribute("aria-label","Tambah kategori baru");
+    add.onclick=()=>openCatEdit(null,"tx"); g.append(add);
   }
   function fillWalletSelect(sel, value){
     sel.replaceChildren(el("option",null,"Tanpa pocket")); sel.firstChild.value="";
@@ -1934,7 +2151,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     $("wHint").textContent = credit ? "Tagihan dicatat sebagai saldo minus dan mengurangi total aset."
       : "Uang masuk (gaji, transfer) cukup dengan memperbarui saldo di sini. Pengeluaran otomatis mengurangi saldo.";
   }
-  // ---------------- pindah saldo antar pocket (+ biaya admin untuk e-wallet) ----------------
+  // ---------------- pindah saldo antar pocket (+ biaya admin opsional) ----------------
   let tEditing=null;
   const feeId = id => id+"-fee";
   const allTx = () => txs.concat(...Object.values(histCache));
@@ -1966,13 +2183,13 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   }
   function updateTransfer(){
     const from=$("tFrom").value, to=$("tTo").value;
-    const ew = isEwallet(from) || isEwallet(to);
-    $("tFeeBox").hidden = !ew;
+    const ew = true; // biaya admin bisa untuk semua pocket
+    $("tFeeBox").hidden = false;
     $("tFeeRow").hidden = !ew || !$("tFeeOn").checked;
     const amt=parseAmt($("tAmt").value), fee = ew && $("tFeeOn").checked ? parseAmt($("tFee").value) : 0;
     const s=$("tSum"); s.replaceChildren();
     if(from===to){ s.append(colored("Pilih pocket tujuan yang berbeda","r")); return; }
-    if(!amt){ s.textContent = ew ? "Isi nominal. Biaya admin dicatat sebagai pengeluaran dari pocket asal." : "Isi nominal yang dipindahkan."; return; }
+    if(!amt){ s.textContent = "Isi nominal. Biaya admin (jika ada) dicatat sebagai pengeluaran dari pocket asal."; return; }
     const fw=wallets.find(w=>w.id===from);
     let avail = fw ? fw.balance : 0;
     if(tEditing && tEditing.wallet===from) avail += tEditing.amount + feeOf(tEditing);
@@ -1991,8 +2208,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     if(!amount){ toast("Isi nominal dulu ya",true); $("tAmt").focus(); return; }
     if(!from || !to || from===to){ toast("Pilih dua pocket yang berbeda",true); return; }
     if(!date){ toast("Pilih tanggal",true); return; }
-    const ew = isEwallet(from) || isEwallet(to);
-    const fee = ew && $("tFeeOn").checked ? parseAmt($("tFee").value) : 0;
+    const fee = $("tFeeOn").checked ? parseAmt($("tFee").value) : 0;
     const old=tEditing, id = old ? old.id : uid(), by = old && old.by ? old.by : myName();
     const tx={id, by, type:"transfer", kind:"transfer", amount, date, category:"Pindah Saldo", note:$("tNote").value.trim().slice(0,120), wallet:from, to};
     const ftx = fee ? {id:feeId(id), by, type:"expense", kind:"daily", amount:fee, date, category:"Biaya Admin", note:`Biaya admin · ${walletName(from)} → ${walletName(to)}`.slice(0,120), wallet:from} : null;
@@ -2160,6 +2376,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const owner = mode+":"+(fbUser?fbUser.uid:"");
     if(owner!==histOwner){ histCache={}; histOwner=owner; }
     if(data.budgets && Object.keys(data.budgets).length) budgets = data.budgets;
+    if(data.catMeta){ const m=parseMeta(data.catMeta); catIcons=m.icons; catAlias=m.alias; }
     txs = (data.expenses||[]).map(normTx)
       .sort((a,b)=>b.date.localeCompare(a.date) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
     wallets = (data.wallets||[]).map(normWallet);
