@@ -500,6 +500,36 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
 .bd-list{max-height:52vh;overflow:auto}
 .bd-day{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);padding:10px 14px 4px;text-transform:uppercase;letter-spacing:.02em}
 .bd-day .num{text-transform:none}
+/* bayar pakai kartu kredit */
+.cc-box{border:1px solid color-mix(in srgb,var(--acc) 45%,var(--line));background:color-mix(in srgb,var(--acc) 10%,var(--surface));border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.cc-box .field-lbl{margin-top:0}
+.cc-tenor{display:grid;grid-template-columns:repeat(4,1fr) 1.1fr;gap:6px;margin-bottom:8px}
+.cc-tenor button{padding:8px 0;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:13px;color:var(--ink)}
+.cc-tenor button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cc-tenor button:disabled{opacity:.5}
+.cc-tenor .input{margin:0;padding:8px 10px;font-size:13px;text-align:center}
+.cc-box .sel{margin-bottom:6px;background:var(--surface)}
+.cc-box .hint{margin:4px 2px 0;font-size:12.5px;line-height:1.45}
+[data-theme="dark"] .cc-tenor button.on{background:#A8C686;color:#14200b;border-color:#A8C686}
+/* pop-up bayar */
+.p-parts{padding:4px 12px;margin-bottom:10px}
+.p-parts .prt{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:14px}
+.p-parts .prt+.prt{border-top:1px solid var(--line)}
+.p-parts .pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.p-parts .pc{font-size:12px;color:var(--muted);font-weight:700}
+#pAmt[readonly]{pointer-events:none}
+/* tagihan: rutin vs hutang */
+.bill-split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 16px}
+.bill-split .bs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:1px}
+.bs-k{font-size:12px;font-weight:700;color:var(--muted)}
+.bs-v{font-size:17px;font-weight:800}
+.bs-s{font-size:12px;color:var(--muted)}
+.bill-sec{margin-bottom:18px}
+.bill-h{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 4px 8px}
+.bill-h h2{font-size:16px;margin:0;font-weight:800}
+.bill-hs{font-size:12.5px;color:var(--muted);margin-top:2px}
+.bill-sec .row.paid{opacity:.62}
+.bill-h .sec-link{white-space:nowrap;flex:none}
 </style>
 </head>
 <body>
@@ -564,8 +594,10 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <button class="tile" data-go="debts" type="button"><div class="t-l">Sisa hutang</div><div class="t-v num money" id="tileDebt">Rp0</div><div class="t-s" id="tileDebtSub"></div></button>
     </div>
 
+    <div id="attnBox">
     <div class="sec"><h2>Perlu perhatian</h2><button class="sec-link" id="attnMore" type="button" data-go="bills"></button></div>
     <div class="list" id="attn"></div>
+    </div>
 
     <div class="sec"><h2>Terakhir</h2><button class="sec-link" data-go="tx" type="button">Riwayat ›</button></div>
     <div class="list" id="recent"></div>
@@ -612,17 +644,23 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <div class="bar"><i id="billBar" style="width:0"></i></div>
       <div class="sum-f"><span class="money" id="billFootL"></span><span class="money" id="billFootR"></span></div>
     </div>
-    <div class="grp" id="unpaidLbl">Belum dibayar</div>
-    <div class="list" id="unpaidList"></div>
-    <button class="fold" id="paidFold" type="button"><span id="paidFoldTxt"></span><span id="paidFoldIc">▾</span></button>
-    <div class="list" id="paidList" hidden></div>
-    <button class="link-card" data-go="debts" type="button">
-      <div class="ic" style="background:var(--surface-2)">💳</div>
-      <div class="meta"><div class="n">Hutang</div><div class="s money" id="debtLinkSub"></div></div>
-      <span class="chev">›</span>
-    </button>
-    <button class="text-btn" id="addFixedBtn" type="button">+ Tambah tagihan rutin</button>
-    <p class="hint center">Cicilan hutang otomatis masuk daftar ini setiap bulan sampai lunas.</p>
+    <div class="bill-split">
+      <div class="bs"><span class="bs-k">🧾 Rutin</span><span class="bs-v num money" id="bsFixed">Rp0</span><span class="bs-s" id="bsFixedSub"></span></div>
+      <div class="bs"><span class="bs-k">💳 Hutang</span><span class="bs-v num money" id="bsDebt">Rp0</span><span class="bs-s" id="bsDebtSub"></span></div>
+    </div>
+
+    <div class="bill-sec">
+      <div class="bill-h"><div><h2>🧾 Tagihan rutin</h2><div class="bill-hs money" id="fixedSecSub"></div></div>
+        <button class="sec-link" id="addFixedBtn" type="button">+ Tambah</button></div>
+      <div class="list" id="fixedList"></div>
+    </div>
+
+    <div class="bill-sec">
+      <div class="bill-h"><div><h2>💳 Hutang berjalan</h2><div class="bill-hs money" id="debtSecSub"></div></div>
+        <button class="sec-link" data-go="debts" type="button">Semua hutang ›</button></div>
+      <div class="list" id="debtBillList"></div>
+      <p class="hint center">Cicilan hutang dan tagihan kartu kredit muncul di sini setiap bulan sampai lunas.</p>
+    </div>
   </section>
 
   <!-- BUDGET -->
@@ -718,6 +756,18 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     <label class="sel"><small>Dari</small><select id="fWallet" aria-label="Pocket"></select></label>
     <label class="sel"><small>Tanggal</small><input id="fDate" type="date" required aria-label="Tanggal"></label>
   </div>
+  <div class="cc-box" id="ccBox" hidden>
+    <div class="field-lbl">💳 Bayar pakai kartu kredit · lama cicilan</div>
+    <div class="cc-tenor" id="ccTenor">
+      <button type="button" data-n="1">Penuh</button>
+      <button type="button" data-n="3">3x</button>
+      <button type="button" data-n="6">6x</button>
+      <button type="button" data-n="12">12x</button>
+      <input class="input mono" id="ccNIn" inputmode="numeric" placeholder="… x" aria-label="Lama cicilan lain (bulan)">
+    </div>
+    <label class="sel"><small>Tagihan dibayar dari</small><select id="ccPayer" aria-label="Pocket pembayar tagihan"></select></label>
+    <p class="hint" id="ccHint"></p>
+  </div>
   <button type="button" class="note-btn" id="noteBtn">+ Tambah catatan (opsional)</button>
   <input class="input" id="fNote" maxlength="120" placeholder="mis. Makan siang kantor" hidden style="margin-bottom:12px">
   <div id="sheetWarn"></div>
@@ -746,6 +796,21 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     <button type="submit" class="btn primary" id="iSave">Simpan</button>
   </div>
 </form>
+
+<!-- bayar tagihan: pilih pocket dulu -->
+<div class="sheet" id="psheet" role="dialog" aria-modal="true" aria-labelledby="pTitle">
+  <div class="grab"></div>
+  <h3><span id="pTitle">Bayar tagihan</span><button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h3>
+  <p class="hint" id="pInfo" style="margin:-4px 2px 10px"></p>
+  <div class="amount-hero"><span class="rp">Rp</span><input id="pAmt" class="num" inputmode="numeric" placeholder="0" autocomplete="off" aria-label="Nominal pembayaran"></div>
+  <p class="hint center" id="pAmtHint" style="margin:-6px 0 10px">Nominal bisa diubah kalau tagihan bulan ini berbeda.</p>
+  <div class="list p-parts" id="pParts" hidden></div>
+  <div id="pWalletBox">
+    <label class="sel" style="margin-bottom:8px"><small>Dibayar pakai pocket</small><select id="pWallet" aria-label="Pocket pembayar"></select></label>
+  </div>
+  <p class="hint" id="pLeft"></p>
+  <div class="sheet-actions"><button type="button" class="btn primary" id="pGo">Bayar</button></div>
+</div>
 
 <!-- kategori: rincian transaksi -->
 <div class="sheet" id="bdsheet" role="dialog" aria-modal="true" aria-labelledby="bdName">
@@ -835,6 +900,10 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   <div class="amount-box">
     <label for="wBal" id="wBalLbl">Saldo saat ini</label>
     <div class="amount-row"><span>Rp</span><input id="wBal" class="mono" inputmode="numeric" placeholder="0" autocomplete="off"></div>
+  </div>
+  <div id="wDueBox" hidden>
+    <div class="field-lbl">Jatuh tempo tagihan kartu (tgl)</div>
+    <input class="input mono" id="wDue" inputmode="numeric" placeholder="1–31" style="margin-bottom:12px">
   </div>
   <p class="hint" id="wHint"></p>
   <button type="button" class="note-btn" id="wMove" hidden>⇄ Pindahkan saldo ke pocket lain</button>
@@ -985,14 +1054,14 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const logRemove = (s,m,id) => logParse(s).filter(([k,v])=>!(k===m && v===id)).map(([k,v])=>`${k}:${v}`).join("|");
 
   // ---------------- normalizers ----------------
-  const kindOf = t => t.type==="transfer" ? "transfer" : t.kind==="fixed"||t.kind==="debt" ? t.kind : (t.category===FIXED_CAT ? "fixed" : t.category===DEBT_CAT ? "debt" : "daily");
-  const normTx = t => { const o={...t, id:String(t.id), type:t.type==="income"?"income":t.type==="transfer"?"transfer":"expense", to:String(t.to||""), amount:Number(t.amount)||0,
+  const kindOf = t => t.type==="transfer" ? (t.kind==="debt" ? "debt" : "transfer") : t.kind==="fixed"||t.kind==="debt" ? t.kind : (t.category===FIXED_CAT ? "fixed" : t.category===DEBT_CAT ? "debt" : "daily");
+  const normTx = t => { const o={...t, id:String(t.id), type:t.type==="income"?"income":t.type==="transfer"?"transfer":"expense", to:String(t.to||""), debt:String(t.debt||""), amount:Number(t.amount)||0,
     category:resolveCat(String(t.category||"Lainnya")), note:String(t.note||""), wallet:String(t.wallet||""), date:String(t.date||"")}; o.kind=kindOf(o); return o; };
-  const normWallet = w => ({id:String(w.id), name:String(w.name||"Pocket"), type:wType(w.type)[0], balance:Number(w.balance)||0});
+  const normWallet = w => ({id:String(w.id), name:String(w.name||"Pocket"), type:wType(w.type)[0], balance:Number(w.balance)||0, dueDay:Number(w.dueDay)||0});
   const normDebt = d => ({id:String(d.id), name:String(d.name||"Hutang"), lender:String(d.lender||""),
     total:Number(d.total)||0, installment:Number(d.installment)||0, tenor:Number(d.tenor)||0,
     paidCount:Number(d.paidCount)||0, dueDay:Number(d.dueDay)||0, note:String(d.note||""),
-    wallet:String(d.wallet||""), paidLog:String(d.paidLog||""), startMonth:/^\d{4}-\d{2}$/.test(String(d.startMonth||"")) ? String(d.startMonth) : ""});
+    wallet:String(d.wallet||""), paidLog:String(d.paidLog||""), startMonth:/^\d{4}-\d{2}$/.test(String(d.startMonth||"")) ? String(d.startMonth) : "", card:String(d.card||""), src:String(d.src||"")});
   const INV_TYPES = [["reksadana","Reksa Dana","📈"],["saham","Saham","📊"],["emas","Emas","🥇"],["deposito","Deposito","🏦"],["obligasi","Obligasi/SBN","📜"],["crypto","Crypto","🪙"],["lainnya","Lainnya","💼"]];
   const iType = t => INV_TYPES.find(x=>x[0]===t) || INV_TYPES[6];
   const normInvest = v => ({id:String(v.id), name:String(v.name||"Investasi"), type:iType(v.type)[0], cost:Number(v.cost)||0, value:Number(v.value)||0});
@@ -1027,7 +1096,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const d = k => { const t=new Date(now); t.setDate(Math.max(1, now.getDate()-k)); return isoDate(t); };
     const dueDate = day => `${mk}-${pad(Math.min(day, now.getDate()))}`;
     let wal = [{id:"w1",name:"BCA",type:"bank",balance:9800000},{id:"w2",name:"GoPay",type:"ewallet",balance:1350000},
-               {id:"w3",name:"Tunai",type:"cash",balance:500000},{id:"w4",name:"Jago",type:"bank",balance:800000}];
+               {id:"w3",name:"Tunai",type:"cash",balance:500000},{id:"w4",name:"Jago",type:"bank",balance:800000},
+               {id:"w5",name:"Kartu BCA",type:"credit",balance:0,dueDay:5}];
     let fx = [{id:"f1",name:"Kos",amount:2000000,dueDay:1,wallet:"w1",paidLog:`${mk}:t-f1`},
               {id:"f2",name:"Internet",amount:350000,dueDay:5,wallet:"w1",paidLog:`${mk}:t-f2`},
               {id:"f3",name:"Listrik",amount:420000,dueDay:Math.min(28,now.getDate()+1),wallet:"w1",paidLog:""},
@@ -1084,9 +1154,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const cSave = async (col, id, body) => { const ref = id ? cdb.collection(col).doc(id) : cdb.collection(col).doc(); body.updatedAt=stamp(); await ref.set(body); return {id:ref.id, ...body}; };
   const TABLE_BODY = {
     invest: v => ({name:String(v.name).slice(0,40), type:v.type, cost:Number(v.cost)||0, value:Number(v.value)||0}),
-    wallets: w => ({name:String(w.name).slice(0,40), type:w.type, balance:Number(w.balance)||0}),
+    wallets: w => ({name:String(w.name).slice(0,40), type:w.type, balance:Number(w.balance)||0, dueDay:Number(w.dueDay)||0}),
     debts: d => ({name:String(d.name).slice(0,40), lender:String(d.lender||"").slice(0,40), total:d.total, installment:d.installment,
-        tenor:d.tenor, paidCount:d.paidCount, dueDay:d.dueDay, note:String(d.note||"").slice(0,120), wallet:String(d.wallet||""), paidLog:String(d.paidLog||""), startMonth:String(d.startMonth||"")}),
+        tenor:d.tenor, paidCount:d.paidCount, dueDay:d.dueDay, note:String(d.note||"").slice(0,120), wallet:String(d.wallet||""), paidLog:String(d.paidLog||""), startMonth:String(d.startMonth||""), card:String(d.card||""), src:String(d.src||"")}),
     fixed: f => ({name:String(f.name).slice(0,40), amount:f.amount, dueDay:f.dueDay, wallet:String(f.wallet||""), paidLog:String(f.paidLog||"")})
   };
   const claudeApi = {
@@ -1120,7 +1190,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       const docs = s => s.docs.map(d=>({id:d.id, ...d.data()}));
       return {expenses: docs(snap), budgets, catMeta: parseMeta(bs.exists ? bs.data() : null), wallets: docs(ws), debts: docs(ds), fixed: docs(fs), invest: docs(is)};
     },
-    save: x => cSave("tx", x.id, {date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""),
+    save: x => cSave("tx", x.id, {date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""), debt:String(x.debt||""),
         amount:x.amount, category:String(x.category||"Lainnya").slice(0,40), note:String(x.note||"").slice(0,120),
         wallet:String(x.wallet||""), kind:x.kind||"daily"}),
     async del(id){ await cdb.collection("tx").doc(id).delete(); },
@@ -1141,7 +1211,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const fbPath = p => `${fbBase()}/${p}`;
   const fbCol = name => FB.fs.collection(fdb, fbPath(name));
   const myName = () => fbUser ? ((fbUser.displayName||"").trim().split(/\s+/)[0] || (fbUser.email||"").split("@")[0]) : "";
-  const txBody = (x, at) => ({date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""),
+  const txBody = (x, at) => ({date:x.date, month:x.date.slice(0,7), type:x.type==="income"?"income":x.type==="transfer"?"transfer":"expense", to:String(x.to||""), debt:String(x.debt||""),
     amount:x.amount, category:String(x.category||"Lainnya").slice(0,40), note:String(x.note||"").slice(0,120),
     wallet:String(x.wallet||""), kind:x.kind||"daily", by:String(x.by||myName()).slice(0,40), updatedAt:at});
   // live sync: listeners on the shown month + pockets, debts, fixed, budgets
@@ -1398,10 +1468,22 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const txIds = new Set(txs.map(t=>t.id));
     const paidId = s => { const id=logGet(s,M); return id && txIds.has(id) ? id : ""; };
     const items = fixed.map(f=>({kind:"fixed", ref:f, name:f.name, amount:f.amount, dueDay:f.dueDay, wallet:f.wallet, txId:paidId(f.paidLog)}));
+    const groups={};
     debts.forEach(d=>{
       const s=debtStats(d), txId=paidId(d.paidLog);
       if(!txId && d.startMonth && d.startMonth>M) return; // first installment starts in a later month
-      if(!s.done || txId) items.push({kind:"debt", ref:d, stats:s, name:d.name, amount:d.installment, dueDay:d.dueDay, wallet:d.wallet, txId});
+      const card = d.card && wallets.find(w=>w.id===d.card && w.type==="credit");
+      if(card && (!s.done || txId)){ // cicilan kartu kredit: digabung jadi satu tagihan per kartu
+        const amt = txId ? Math.min(d.installment, (d.total||d.installment*d.tenor)-(d.paidCount-1)*d.installment) : Math.min(d.installment, s.remaining||d.installment);
+        (groups[card.id] = groups[card.id] || {card, parts:[]}).parts.push({debt:d, amount:amt, txId});
+        return;
+      }
+      if(!s.done || txId) items.push({kind:"debt", ref:d, stats:s, name:d.name, amount: txId ? d.installment : Math.min(d.installment, s.remaining||d.installment), dueDay:d.dueDay, wallet:d.wallet, txId});
+    });
+    Object.values(groups).forEach(({card,parts})=>{
+      const open=parts.filter(p=>!p.txId), sum=a=>a.reduce((x,p)=>x+p.amount,0);
+      items.push({kind:"card", ref:card, parts, name:`Tagihan ${card.name}`, amount: open.length ? sum(open) : sum(parts),
+        dueDay: card.dueDay || parts[0].debt.dueDay, wallet:(open[0]||parts[0]).debt.wallet, txId: open.length ? "" : parts[0].txId});
     });
     items.forEach(i=>{ i.paid=!!i.txId; });
     return items.sort((a,b)=>(a.paid-b.paid) || ((a.dueDay||99)-(b.dueDay||99)));
@@ -1425,7 +1507,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   function dueInfo(i){
     if(i.paid || !i.dueDay) return null;
     const curIdx=cur.y*12+cur.m, nowIdx=now.getFullYear()*12+now.getMonth();
-    const today = curIdx===nowIdx ? now.getDate() : (curIdx<nowIdx ? 99 : 0);
+    if(curIdx>nowIdx){ const d=new Date(cur.y,cur.m,Math.min(i.dueDay,dim())); return {diff:40+d.getDate(), text:`${d.getDate()} ${MSHORT[d.getMonth()]}`, cls:""}; } // bulan depan: cukup tanggalnya
+    const today = curIdx===nowIdx ? now.getDate() : 99;
     const diff=Math.min(i.dueDay, dim())-today;
     if(diff<0) return {diff, text:"lewat jatuh tempo", cls:"r"};
     if(diff===0) return {diff, text:"hari ini", cls:"r"};
@@ -1450,7 +1533,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const b=el("button","row"); b.type="button";
     const meta=el("div","meta");
     meta.append(el("div","n", t.note || t.category),
-      subLine([t.kind==="daily"?t.category:(t.kind==="fixed"?"Tagihan":"Cicilan"), walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
+      subLine([t.kind==="daily"?t.category:(t.kind==="fixed"?"Tagihan":"Cicilan"), t.debt ? "💳 "+(walletName(t.wallet)||"Kartu kredit")+ccTenorTxt(t) : walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
     const icon = t.kind==="fixed" ? icEl(t.note||t.category, fixedIcon(t.note)) : icEl(t.category);
     b.append(icon, meta, el("div",`amt num money ${t.type==="income"?"inc":""}`, (t.type==="income"?"+":"−")+rp(t.amount)));
     const parent = /-fee$/.test(t.id) ? allTx().find(x=>x.id===t.id.slice(0,-4) && x.type==="transfer") : null;
@@ -1459,6 +1542,12 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   }
   function transferRow(t){
     const b=el("button","row"); b.type="button";
+    if(t.kind==="debt"){ // cicilan kartu kredit: memotong saldo, tidak dihitung pengeluaran lagi
+      const meta=el("div","meta");
+      meta.append(el("div","n", t.note || "Cicilan kartu kredit"), subLine(["Bayar kartu", walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
+      b.append(icEl(t.note||"Kartu","💳"), meta, el("div","amt num money tf","⇄ "+rp(t.amount)));
+      b.onclick=()=>openTx(t); return b;
+    }
     const meta=el("div","meta"), fee=feeOf(t);
     meta.append(el("div","n", t.note || `Pindah ke ${walletName(t.to)||"pocket"}`),
       subLine([`${walletName(t.wallet)||"?"} → ${walletName(t.to)||"?"}`, fee?`admin ${rp(fee)}`:"", relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
@@ -1506,14 +1595,14 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     B.rows.filter(r=>r.level==="red").forEach(r=>items.push({sev:10+r.rem, r}));
     items.sort((a,b)=>a.sev-b.sev);
     const box=$("attn"); box.replaceChildren();
-    if(!items.length) box.append(emptyRow("Tidak ada yang mendesak", "Tagihan dan budget aman. ✓"));
+    $("attnBox").hidden = !items.length; // disembunyikan kalau tidak ada yang mendesak, muncul lagi otomatis
     items.slice(0,3).forEach(x=>{
       const r=el("div","row");
       if(x.i){
         const i=x.i, meta=el("div","meta");
-        meta.append(el("div","n",i.name), subLine([strong(rpShort(i.amount)), colored(x.d.text, x.d.cls), i.kind==="debt"?`cicilan ${i.ref.paidCount+1}/${i.ref.tenor||"?"}`:""]));
-        const pay=el("button","pay","Bayar"); pay.type="button"; pay.onclick=()=>togglePaid(i);
-        r.append(i.kind==="debt"?icEl(i.name,"💳"):icEl(i.name, fixedIcon(i.name)), meta, pay);
+        meta.append(el("div","n",i.name), subLine([strong(rpShort(i.amount)), colored(x.d.text, x.d.cls), i.kind==="debt"?`cicilan ${i.ref.paidCount+1}/${i.ref.tenor||"?"}`:i.kind==="card"?`${i.parts.filter(p=>!p.txId).length} cicilan`:""]));
+        const pay=el("button","pay","Bayar"); pay.type="button"; pay.onclick=()=>openPay(i);
+        r.append(i.kind!=="fixed"?icEl(i.name,"💳"):icEl(i.name, fixedIcon(i.name)), meta, pay);
       } else {
         const b=x.r, meta=el("div","meta");
         meta.append(el("div","n","Budget "+b.c), subLine([colored(b.s>b.b ? `Lewat ${rpShort(b.s-b.b)}` : `Tinggal ${Math.max(0,Math.floor(b.rem*100))}% · ${rp(b.b-b.s)}`, "r")]));
@@ -1707,40 +1796,45 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   $("pocketToggle").onclick=()=>{ pocketOpen=!pocketOpen; store.set("dk.pocketOpen", pocketOpen?"1":""); render(); };
   $("addPocketBtn").onclick=()=>openWallet();
   $("movePocketBtn").onclick=()=>openTransfer();
-  $("paidFold").onclick=()=>{ paidOpen=!paidOpen; render(); };
   $("doneFold").onclick=()=>{ doneOpen=!doneOpen; render(); };
   function billRow(i){
     const r=el("div","row"+(i.paid?" paid":""));
     const meta=el("div","meta");
     const n=el("div","n"); n.append(i.name); if(i.kind==="debt") n.append(el("span","tag",`${Math.min(i.ref.paidCount+(i.paid?0:1), i.ref.tenor||99)}/${i.ref.tenor||"?"}`));
+    if(i.kind==="card") n.append(el("span","tag",`${i.parts.length} cicilan`));
     const d=dueInfo(i);
     meta.append(n, subLine([strong(rp(i.amount)), i.paid ? colored("lunas ✓","g") : (d ? colored(d.text,d.cls) : ""), walletName(i.wallet)]));
-    meta.style.cursor="pointer"; meta.onclick=()=> i.kind==="fixed" ? openFixed(i.ref) : openDebt(i.ref);
+    meta.style.cursor="pointer"; meta.onclick=()=> i.kind==="fixed" ? openFixed(i.ref) : i.kind==="card" ? openPay(i, true) : openDebt(i.ref);
     const btn=el("button", i.paid?"pay ghost":"pay", i.paid?"Batal":"Bayar"); btn.type="button";
     btn.setAttribute("aria-label", (i.paid?"Batalkan pembayaran ":"Bayar ")+i.name);
-    btn.onclick=()=>togglePaid(i);
-    r.append(i.kind==="debt"?icEl(i.name,"💳"):icEl(i.name, fixedIcon(i.name)), meta, btn);
+    btn.onclick=()=> i.paid ? togglePaid(i) : openPay(i);
+    r.append(i.kind!=="fixed"?icEl(i.name,"💳"):icEl(i.name, fixedIcon(i.name)), meta, btn);
     return r;
   }
   function renderBills(F){
-    const total=F.reduce((a,i)=>a+i.amount,0), paid=F.filter(i=>i.paid), paidSum=paid.reduce((a,i)=>a+i.amount,0);
-    const unpaid=F.filter(i=>!i.paid).sort((a,b)=>((dueInfo(a)||{diff:99}).diff)-((dueInfo(b)||{diff:99}).diff));
+    const sum=a=>a.reduce((x,i)=>x+i.amount,0);
+    const total=sum(F), paid=F.filter(i=>i.paid), paidSum=sum(paid);
     $("billLeft").textContent = rp(total-paidSum);
     $("billBar").style.width = (total? paidSum/total*100 : 0)+"%";
     $("billFootL").textContent = `${paid.length} dari ${F.length} lunas · ${rpShort(paidSum)}`;
     $("billFootR").textContent = `Total ${rpShort(total)}`;
-    const ul=$("unpaidList"); ul.replaceChildren();
-    $("unpaidLbl").hidden = !F.length;
-    if(!F.length) ul.append(emptyRow("Belum ada tagihan rutin", "Tambahkan kos, internet, listrik, atau langganan."));
-    else if(!unpaid.length) ul.append(emptyRow("Semua tagihan bulan ini lunas ✓"));
-    unpaid.forEach(i=>ul.append(billRow(i)));
-    $("paidFold").hidden = !paid.length;
-    $("paidFoldTxt").replaceChildren(el("b",null,`✓ Sudah dibayar (${paid.length})`), el("span","muted"," · "+paid.map(i=>i.name).join(", ")));
-    $("paidFoldIc").textContent = paidOpen ? "▴" : "▾";
-    const pl=$("paidList"); pl.replaceChildren(); pl.hidden = !paidOpen || !paid.length;
-    paid.forEach(i=>pl.append(billRow(i)));
-    const act = debts.map(d=>debtStats(d)).filter(s=>!s.done);
-    $("debtLinkSub").textContent = debts.length ? `${act.length} aktif · sisa ${rp(act.reduce((a,s)=>a+s.remaining,0))}` : "Belum ada hutang · tambah cicilan atau pinjaman";
+    const order = list => list.slice().sort((a,b)=>(a.paid-b.paid) || (((dueInfo(a)||{diff:99}).diff)-((dueInfo(b)||{diff:99}).diff)) || ((a.dueDay||99)-(b.dueDay||99)));
+    const fx=F.filter(i=>i.kind==="fixed"), dx=F.filter(i=>i.kind!=="fixed");
+    const left = l => sum(l.filter(i=>!i.paid));
+    // ringkasan terpisah
+    $("bsFixed").textContent = rp(left(fx)); $("bsFixedSub").textContent = fx.length ? `${fx.filter(i=>i.paid).length}/${fx.length} lunas` : "belum ada";
+    $("bsDebt").textContent = rp(left(dx)); $("bsDebtSub").textContent = dx.length ? `${dx.filter(i=>i.paid).length}/${dx.length} lunas` : "tidak ada";
+    // tagihan rutin
+    $("fixedSecSub").textContent = fx.length ? (left(fx) ? `Sisa ${rp(left(fx))} dari ${rp(sum(fx))}` : `Semua lunas · ${rp(sum(fx))} ✓`) : "Kos, internet, listrik, langganan";
+    const fl=$("fixedList"); fl.replaceChildren();
+    if(!fx.length) fl.append(emptyRow("Belum ada tagihan rutin", "Tambahkan kos, internet, listrik, atau langganan."));
+    order(fx).forEach(i=>fl.append(billRow(i)));
+    // hutang berjalan
+    const act = debts.map(d=>debtStats(d)).filter(s=>!s.done), sisaAll = act.reduce((a,s)=>a+s.remaining,0);
+    $("debtSecSub").textContent = dx.length ? `Bulan ini sisa ${rp(left(dx))} · total hutang ${rpShort(sisaAll)}` : (act.length ? `Total hutang ${rp(sisaAll)} · belum ada cicilan bulan ini` : "Tidak ada hutang berjalan");
+    const dl=$("debtBillList"); dl.replaceChildren();
+    if(!dx.length) dl.append(emptyRow(act.length ? "Tidak ada cicilan bulan ini" : "Tidak ada hutang berjalan 🎉", act.length ? "Cicilan berikutnya muncul di bulan jatuh temponya." : "Tambah hutang lewat 'Semua hutang'."));
+    order(dx).forEach(i=>dl.append(billRow(i)));
   }
 
   function renderDebts(){
@@ -1890,7 +1984,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   $("bdEdit").onclick=()=>{ if(bdCat!=null) openCatEdit(bdCat); };
 
   // ---------------- changes: shown at once, saved in one request ----------------
-  const effect = t => (t && t.wallet) ? (t.type==="income" ? t.amount : -t.amount) : 0;
+  const effect = t => (t && t.wallet && !t.debt) ? (t.type==="income" ? t.amount : -t.amount) : 0; // card purchase (t.debt) is paid later via installments
   const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2,10);
   const walletOps = deltas => Object.entries(deltas).filter(([id,d])=>id && d).map(([id,delta])=>({op:"adjWallet", id, delta}));
   function addDelta(map, id, d){ if(id) map[id]=(map[id]||0)+d; }
@@ -1962,11 +2056,49 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   }
   function fillWalletSelect(sel, value){
     sel.replaceChildren(el("option",null,"Tanpa pocket")); sel.firstChild.value="";
-    wallets.forEach(w=>{ const o=el("option",null,`${wType(w.type)[2]} ${w.name} · ${shortNoRp(w.balance)}`); o.value=w.id; sel.append(o); });
+    wallets.forEach(w=>{ const o=el("option",null, w.type==="credit" ? `💳 ${w.name} · kartu kredit` : `${wType(w.type)[2]} ${w.name} · ${shortNoRp(w.balance)}`); o.value=w.id; sel.append(o); });
     sel.value = wallets.some(w=>w.id===value) ? value : "";
   }
+  // ---------------- bayar pakai kartu kredit: jadi cicilan mulai bulan depan ----------------
+  const TENORS=[1,3,6,12];
+  let ccN=1, ccPayer="";
+  const isCard = id => { const w=wallets.find(x=>x.id===id); return !!w && w.type==="credit"; };
+  const ccDebtOf = t => t && t.debt ? debts.find(d=>d.id===t.debt) || null : null;
+  const ccTenorTxt = t => { const d=ccDebtOf(t); return d ? (d.tenor>1 ? ` · cicil ${d.tenor}x` : " · bayar penuh") : ""; };
+  const nextMonthOf = date => { const [y,m]=date.split("-").map(Number); const d=new Date(y,m,1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; };
+  const payers = () => wallets.filter(w=>w.type!=="credit");
+  function ccPlan(amount, date, card){
+    const due = (card && card.dueDay) || Number(date.slice(8,10)) || 1;
+    const [y,m]=nextMonthOf(date).split("-").map(Number);
+    const first=new Date(y,m-1,Math.min(due,new Date(y,m,0).getDate()));
+    return {due, first, inst:Math.ceil(amount/ccN), start:`${y}-${pad(m)}`};
+  }
+  function updateCC(){
+    const box=$("ccBox");
+    const show = isCard(sheetWallet) && !(editing && editing.kind!=="daily");
+    box.hidden=!show; if(!show) return;
+    const old=ccDebtOf(editing), locked = !!(old && old.paidCount>0);
+    document.querySelectorAll("#ccTenor button").forEach(b=>{ b.classList.toggle("on", Number(b.dataset.n)===ccN); b.disabled=locked; });
+    const ni=$("ccNIn"); ni.disabled=locked; if(document.activeElement!==ni) ni.value = TENORS.includes(ccN) ? "" : String(ccN);
+    const sel=$("ccPayer"); sel.replaceChildren();
+    payers().forEach(w=>{ const o=el("option",null,`${wType(w.type)[2]} ${w.name} · ${shortNoRp(w.balance)}`); o.value=w.id; sel.append(o); });
+    if(!payers().some(w=>w.id===ccPayer)) ccPayer = payers()[0] ? payers()[0].id : "";
+    sel.value=ccPayer;
+    const h=$("ccHint"); h.replaceChildren();
+    const card=wallets.find(w=>w.id===sheetWallet), amount=parseAmt($("fAmount").value), date=$("fDate").value||isoToday();
+    if(!payers().length){ h.append(colored("Tambahkan pocket bank atau e-wallet dulu untuk membayar tagihan kartu.","r")); return; }
+    if(locked){ h.append(colored(`Sudah ${old.paidCount} cicilan dibayar, nominal dan lama cicilan tidak bisa diubah di sini.`,"a")); return; }
+    if(!amount){ h.textContent="Isi nominal untuk melihat jadwal tagihannya."; return; }
+    const pl=ccPlan(amount,date,card), when=`${pl.first.getDate()} ${MSHORT[pl.first.getMonth()]} ${pl.first.getFullYear()}`;
+    h.append(ccN===1 ? `Ditagih penuh ${rp(amount)} pada ${when}.` : `Ditagih mulai ${when}: ${rp(pl.inst)}/bulan × ${ccN}.`,
+      el("br"), "Masuk budget hari ini. Saldo pocket baru terpotong saat tagihannya dibayar di Tagihan.");
+    if(card && !card.dueDay) h.append(el("br"), colored(`Tanggal jatuh tempo ${card.name} belum diatur, sementara pakai tgl ${pl.due}.`,"a"));
+  }
+  $("ccTenor").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b||b.disabled) return; ccN=Number(b.dataset.n); updateCC(); });
+  $("ccNIn").addEventListener("input", e=>{ const v=String(e.target.value).replace(/[^\d]/g,"").slice(0,2); e.target.value=v; const n=Number(v); if(n>=1){ ccN=Math.min(n,36); updateCC(); } });
+  $("ccPayer").addEventListener("change", e=>{ ccPayer=e.target.value; });
   function updateSaveLabel(){ const a=parseAmt($("fAmount").value); $("saveBtn").textContent = a ? `Simpan · ${rp(a)}` : "Simpan"; }
-  $("fWallet").onchange = e => { sheetWallet = e.target.value; };
+  $("fWallet").onchange = e => { sheetWallet = e.target.value; updateCC(); };
   $("noteBtn").onclick = () => { $("noteBtn").hidden=true; $("fNote").hidden=false; $("fNote").focus(); };
   function updateSheetWarn(){
     const box=$("sheetWarn"); box.replaceChildren();
@@ -1994,6 +2126,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     $("fDate").value = t ? t.date : (isCurrentMonth() ? isoToday() : `${cur.y}-${pad(cur.m+1)}-01`);
     $("fNote").value = t ? t.note : "";
     $("fNote").hidden = !(t && t.note); $("noteBtn").hidden = !$("fNote").hidden;
+    const od=ccDebtOf(t); ccN = od ? (od.tenor||1) : 1;
+    ccPayer = od ? od.wallet : (store.get("dk.ccPayer") || defaultWallet());
+    updateCC();
     updateSaveLabel();
     updateSheetWarn();
     openModal("sheet");
@@ -2001,12 +2136,12 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   }
   $("fab").onclick=()=>openTx();
   moneyInput($("fAmount"));
-  $("fAmount").addEventListener("input", ()=>{ updateSheetWarn(); updateSaveLabel(); });
-  $("fDate").addEventListener("change", updateSheetWarn);
+  $("fAmount").addEventListener("input", ()=>{ updateSheetWarn(); updateSaveLabel(); updateCC(); });
+  $("fDate").addEventListener("change", ()=>{ updateSheetWarn(); updateCC(); });
   $("quick").addEventListener("click",e=>{
     const b=e.target.closest("button"); if(!b) return;
     const add=Number(b.dataset.add); $("fAmount").value = fmtInput(add ? parseAmt($("fAmount").value)+add : 0);
-    updateSheetWarn(); updateSaveLabel();
+    updateSheetWarn(); updateSaveLabel(); updateCC();
   });
   $("sheet").addEventListener("submit", e=>{
     e.preventDefault();
@@ -2014,25 +2149,43 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     if(!amount){ toast("Isi nominal dulu ya",true); $("fAmount").focus(); return; }
     if(!date){ toast("Pilih tanggal",true); return; }
     const x={id: editing?editing.id:uid(), by: editing&&editing.by ? editing.by : myName(), type: editing?editing.type:"expense", kind: editing?editing.kind:"daily",
-      amount, date, category: editing && editing.kind!=="daily" ? editing.category : sheetCat, note:$("fNote").value.trim(), wallet:sheetWallet};
+      amount, date, category: editing && editing.kind!=="daily" ? editing.category : sheetCat, note:$("fNote").value.trim(), wallet:sheetWallet,
+      to: editing ? editing.to||"" : ""};
+    // kartu kredit → hutang cicilan mulai bulan depan
+    const extra=[], old=ccDebtOf(editing), cc = x.kind==="daily" && x.type==="expense" && isCard(x.wallet);
+    if(old && old.paidCount>0 && (!cc || amount!==editing.amount || ccN!==old.tenor || x.wallet!==old.card)){ toast(`Sudah ada cicilan dibayar. Ubah lewat halaman Hutang atau batalkan pembayarannya dulu.`,true); return; }
+    let ccMsg="";
+    if(cc){
+      if(!ccPayer){ toast("Tambahkan pocket untuk membayar tagihan kartu",true); return; }
+      const card=wallets.find(w=>w.id===x.wallet), pl=ccPlan(amount,date,card);
+      x.debt = old ? old.id : uid();
+      const keep = old && old.paidCount>0;
+      extra.push({op:"put", table:"debts", row:{note:"", paidLog:"", paidCount:0, ...(old||{}), id:x.debt,
+        name:`${card.name} · ${x.note||x.category}`.slice(0,40), lender:card.name, installment:pl.inst, tenor:ccN, total:amount,
+        dueDay: keep ? old.dueDay : pl.due, wallet:ccPayer, startMonth: keep ? old.startMonth : pl.start, card:card.id, src:x.id}});
+      store.set("dk.ccPayer", ccPayer);
+      ccMsg = `💳 Tagihan ${card.name} mulai ${pl.first.getDate()} ${MSHORT[pl.first.getMonth()]}` + (ccN>1?` · ${rpShort(pl.inst)}×${ccN}`:"");
+    } else { x.debt=""; if(old) extra.push({op:"del", table:"debts", id:old.id}); }
     const deltas={}; if(editing) mergeDeltas(deltas, effects(editing), -1); mergeDeltas(deltas, effects(x));
-    if(x.wallet) store.set("dk.wallet", x.wallet);
+    if(x.wallet && !cc) store.set("dk.wallet", x.wallet);
     const wasEditing = !!editing;
+    const ops=[{op:"putTx", tx:x}, ...walletOps(deltas), ...extra];
     closeModal();
     const [y,m]=date.split("-").map(Number);
-    if(y!==cur.y || m-1!==cur.m){ cur={y,m:m-1}; mutate([{op:"putTx", tx:x}, ...walletOps(deltas)]).then(()=>load()); toast("Tersimpan ✓"); return; }
-    mutate([{op:"putTx", tx:x}, ...walletOps(deltas)]);
+    if(y!==cur.y || m-1!==cur.m){ cur={y,m:m-1}; mutate(ops).then(()=>load()); toast(ccMsg||"Tersimpan ✓"); return; }
+    mutate(ops);
     const r = budgetStatus().rows.find(r=>r.c===x.category);
     if(x.kind==="daily" && r && r.level==="red") toast(r.s>r.b ? `⚠️ Budget ${r.c} terlewati ${rp(r.s-r.b)}` : `⚠️ Budget ${r.c} tinggal ${Math.max(0,Math.floor(r.rem*100))}%`, true);
-    else toast(wasEditing?"Transaksi diperbarui":"Tersimpan ✓");
+    else toast(ccMsg || (wasEditing?"Transaksi diperbarui":"Tersimpan ✓"));
   });
   confirmBtn($("delBtn"), "Yakin hapus?", async ()=>{
     const t=editing; if(!t) return;
     const deltas=mergeDeltas({}, effects(t), -1);
     const ops=[{op:"delTx", id:t.id}, ...walletOps(deltas)];
+    const cd=ccDebtOf(t); if(cd) ops.push({op:"del", table:"debts", id:cd.id}); // cicilan kartunya ikut dihapus
     if(t.kind==="debt"){ // keep the debt count in step
-      const d=debts.find(d=>logParse(d.paidLog).some(([,v])=>v===t.id));
-      if(d){ const m=logParse(d.paidLog).find(([,v])=>v===t.id)[0]; ops.push({op:"put", table:"debts", row:{...d, paidCount:Math.max(0,d.paidCount-1), paidLog:logRemove(d.paidLog,m,t.id)}}); }
+      debts.filter(d=>logParse(d.paidLog).some(([,v])=>v===t.id)).forEach(d=>{
+        const m=logParse(d.paidLog).find(([,v])=>v===t.id)[0]; ops.push({op:"put", table:"debts", row:{...d, paidCount:Math.max(0,d.paidCount-1), paidLog:logRemove(d.paidLog,m,t.id)}}); });
     }
     closeModal(); mutate(ops);
     toast(t.kind==="daily" ? "Transaksi dihapus" : "Dihapus. Status dibayar ikut dibatalkan.");
@@ -2043,24 +2196,82 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     if(isCurrentMonth()) return isoToday();
     return `${cur.y}-${pad(cur.m+1)}-${pad(Math.min(dueDay||1, dim()))}`;
   }
-  function togglePaid(i){
-    const M=monthKey(), table = i.kind==="debt" ? "debts" : "fixed";
-    if(!i.paid){
-      const id=uid();
-      const n = i.kind==="debt" ? `Cicilan ${i.name} ke-${i.ref.paidCount+1}` : i.name;
-      const tx={id, by:myName(), type:"expense", kind:i.kind, amount:i.amount, date:payDate(i.dueDay),
-        category: i.kind==="debt"?DEBT_CAT:FIXED_CAT, note:n.slice(0,120), wallet:i.wallet};
-      const row = i.kind==="debt" ? {...i.ref, paidCount:i.ref.paidCount+1, paidLog:logAdd(i.ref.paidLog,M,id)} : {...i.ref, paidLog:logAdd(i.ref.paidLog,M,id)};
-      mutate([{op:"putTx", tx}, ...walletOps({[i.wallet]: -i.amount}), {op:"put", table, row}]);
-      const left = i.kind==="debt" && i.ref.tenor && i.ref.paidCount+1>=i.ref.tenor;
-      toast(left ? `${i.name} lunas! 🎉` : `${i.name} dibayar ✓`);
+  function togglePaid(i){ if(i.paid) undoPay(i); else openPay(i); }
+  function doPay(i, wallet, amount){
+    const M=monthKey(), id=uid(), date=payDate(i.dueDay), ops=[];
+    if(i.kind==="card"){
+      const open=i.parts.filter(p=>!p.txId);
+      ops.push({op:"putTx", tx:{id, by:myName(), type:"transfer", kind:"debt", amount, date, category:DEBT_CAT,
+        note:`${i.name} · ${MSHORT[cur.m]} ${cur.y} (${open.length} cicilan)`.slice(0,120), wallet, to:""}});
+      open.forEach(p=>ops.push({op:"put", table:"debts", row:{...p.debt, wallet, paidCount:p.debt.paidCount+1, paidLog:logAdd(p.debt.paidLog,M,id)}}));
     } else {
-      const t = txs.find(t=>t.id===i.txId);
-      const row = i.kind==="debt" ? {...i.ref, paidCount:Math.max(0,i.ref.paidCount-1), paidLog:logRemove(i.ref.paidLog,M,i.txId)} : {...i.ref, paidLog:logRemove(i.ref.paidLog,M,i.txId)};
-      mutate([{op:"delTx", id:i.txId}, ...(t ? walletOps({[t.wallet]: -effect(t)}) : []), {op:"put", table, row}]);
-      toast(`Pembayaran ${i.name} dibatalkan`);
+      const debt=i.kind==="debt", viaCard = debt && i.ref.card;
+      const n = debt ? `Cicilan ${i.name} ke-${i.ref.paidCount+1}` : i.name;
+      ops.push({op:"putTx", tx:{id, by:myName(), type: viaCard ? "transfer" : "expense", kind:i.kind, amount, date,
+        category: debt?DEBT_CAT:FIXED_CAT, note:n.slice(0,120), wallet, to:""}});
+      ops.push({op:"put", table: debt?"debts":"fixed", row: debt ? {...i.ref, wallet, paidCount:i.ref.paidCount+1, paidLog:logAdd(i.ref.paidLog,M,id)} : {...i.ref, wallet, paidLog:logAdd(i.ref.paidLog,M,id)}});
     }
+    ops.push(...walletOps({[wallet]: -amount}));
+    mutate(ops);
+    const left = i.kind==="debt" && i.ref.tenor && i.ref.paidCount+1>=i.ref.tenor;
+    toast(left ? `${i.name} lunas! 🎉` : `${i.name} dibayar ${rp(amount)} dari ${walletName(wallet)||"tanpa pocket"} ✓`);
   }
+  function undoPay(i){
+    const M=monthKey(), ops=[], deltas={};
+    const ids = i.kind==="card" ? [...new Set(i.parts.map(p=>p.txId).filter(Boolean))] : [i.txId];
+    ids.forEach(tid=>{ const t=txs.find(x=>x.id===tid); ops.push({op:"delTx", id:tid}); if(t) mergeDeltas(deltas, effects(t), -1); });
+    if(i.kind==="card") i.parts.filter(p=>p.txId).forEach(p=>ops.push({op:"put", table:"debts", row:{...p.debt, paidCount:Math.max(0,p.debt.paidCount-1), paidLog:logRemove(p.debt.paidLog,M,p.txId)}}));
+    else ops.push({op:"put", table: i.kind==="debt"?"debts":"fixed", row: i.kind==="debt" ? {...i.ref, paidCount:Math.max(0,i.ref.paidCount-1), paidLog:logRemove(i.ref.paidLog,M,i.txId)} : {...i.ref, paidLog:logRemove(i.ref.paidLog,M,i.txId)}});
+    mutate([...ops, ...walletOps(deltas)]);
+    toast(`Pembayaran ${i.name} dibatalkan`);
+  }
+  // pop-up konfirmasi: semua tagihan dipilih pocket-nya dulu sebelum dibayar
+  let payItem=null, payWallet="";
+  function openPay(i, viewOnly){
+    if(i.paid && !viewOnly) return undoPay(i);
+    payItem=i;
+    $("pTitle").textContent = i.paid ? i.name : `Bayar ${i.name}`;
+    const d=dueInfo(i);
+    $("pInfo").textContent = [i.kind==="debt" ? `Cicilan ke-${i.ref.paidCount+1} dari ${i.ref.tenor||"?"}` : i.kind==="card" ? "Semua cicilan kartu bulan ini, dibayar sekaligus" : "Tagihan rutin",
+      i.paid ? "sudah dibayar ✓" : d ? "jatuh tempo "+d.text : ""].filter(Boolean).join(" · ");
+    $("pAmt").value = fmtInput(i.amount);
+    $("pAmt").readOnly = i.kind!=="fixed" || i.paid;
+    $("pAmtHint").hidden = i.kind!=="fixed" || i.paid;
+    const pl=$("pParts"); pl.replaceChildren(); pl.hidden = i.kind!=="card";
+    if(i.kind==="card") i.parts.forEach(p=>{
+      const r=el("div","prt"); const d=p.debt;
+      r.append(el("span","pn", d.name.replace(i.ref.name+" · ","")), el("span","pc", `${Math.min(d.paidCount+(p.txId?0:1), d.tenor)}/${d.tenor}`), el("span","pv num money"+(p.txId?" t-g":""), (p.txId?"✓ ":"")+rp(p.amount)));
+      pl.append(r);
+    });
+    const ok=wallets.filter(w=>w.type!=="credit");
+    payWallet = ok.some(w=>w.id===i.wallet) ? i.wallet : (ok.some(w=>w.id===defaultWallet()) ? defaultWallet() : (ok[0]?ok[0].id:""));
+    const sel=$("pWallet"); sel.replaceChildren();
+    ok.forEach(w=>{ const o=el("option",null,`${wType(w.type)[2]} ${w.name} · ${shortNoRp(w.balance)}`); o.value=w.id; sel.append(o); });
+    sel.value=payWallet; sel.disabled=i.paid;
+    $("pWalletBox").hidden = i.paid;
+    $("pGo").hidden = i.paid;
+    updatePay(); openModal("psheet");
+  }
+  function updatePay(){
+    const i=payItem; if(!i) return;
+    const amt=parseAmt($("pAmt").value), w=wallets.find(x=>x.id===payWallet), h=$("pLeft"); h.replaceChildren();
+    $("pGo").textContent = amt ? `Bayar ${rp(amt)}` : "Bayar";
+    if(i.paid) return;
+    if(!w){ h.append(colored("Belum ada pocket untuk membayar. Tambahkan pocket bank, e-wallet, atau tunai.","r")); return; }
+    const after=w.balance-amt;
+    h.append(`Saldo ${w.name} setelah bayar: `, el("b", after<0?"t-r":"", rp(after)));
+    if(after<0) h.append(el("br"), colored("Saldo tidak cukup. Tetap bisa dicatat, saldo jadi minus.","a"));
+  }
+  $("pWallet").addEventListener("change", e=>{ payWallet=e.target.value; updatePay(); });
+  moneyInput($("pAmt")); $("pAmt").addEventListener("input", updatePay);
+  $("pGo").onclick=()=>{
+    const i=payItem; if(!i) return;
+    const amt=parseAmt($("pAmt").value);
+    if(!amt){ toast("Isi nominal pembayaran",true); return; }
+    if(!payWallet){ toast("Pilih pocket untuk membayar",true); return; }
+    store.set("dk.wallet", payWallet);
+    closeModal(); doPay(i, payWallet, amt);
+  };
 
   // ---------------- investment sheet ----------------
   let vEditing=null, vTypeSel="reksadana";
@@ -2105,8 +2316,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       box.append(c);
     });
     const credit = wTypeSel==="credit";
-    $("wBalLbl").textContent = credit ? "Tagihan kartu saat ini" : "Saldo saat ini";
-    $("wHint").textContent = credit ? "Tagihan dicatat sebagai saldo minus dan mengurangi total aset."
+    $("wBalLbl").textContent = credit ? "Tagihan lama yang belum tercatat (opsional)" : "Saldo saat ini";
+    $("wDueBox").hidden = !credit;
+    $("wHint").textContent = credit ? "Pilih kartu ini di Catat untuk bayar pakai kartu kredit. Belanjanya masuk budget hari itu, lalu jadi tagihan bulan depan (bisa dicicil) di Tagihan dan Hutang."
       : "Uang masuk (gaji, transfer) cukup dengan memperbarui saldo di sini. Pengeluaran otomatis mengurangi saldo.";
   }
   // ---------------- pindah saldo antar pocket (+ biaya admin opsional) ----------------
@@ -2198,15 +2410,17 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     $("wBal").value = w ? fmtInput(Math.abs(w.balance)) : "";
     $("wDel").hidden = !w; resetConfirm($("wDel"),"Hapus");
     $("wMove").hidden = !w || wallets.length<2;
+    $("wDue").value = w && w.dueDay ? w.dueDay : "";
     renderWTypes(); openModal("wsheet");
   }
-  moneyInput($("wBal"));
+  moneyInput($("wBal")); dayInput($("wDue"));
   $("wsheet").addEventListener("submit", async e=>{
     e.preventDefault();
     const name=$("wName").value.trim();
     if(!name){ toast("Isi nama pocket",true); return; }
     const amt=parseAmt($("wBal").value);
-    const w={id:wEditing?wEditing.id:undefined, name, type:wTypeSel, balance: wTypeSel==="credit" ? -amt : amt};
+    const w={id:wEditing?wEditing.id:undefined, name, type:wTypeSel, balance: wTypeSel==="credit" ? -amt : amt,
+      dueDay: wTypeSel==="credit" ? Math.min(31,parseAmt($("wDue").value)) : 0};
     closeModal(); mutate([{op:"put", table:"wallets", row:{...w, id:w.id||uid()}}]); toast(wEditing?"Pocket diperbarui":"Pocket ditambahkan");
   });
   $("wMove").onclick=()=>{ const w=wEditing; if(w) openTransfer(null, w.id); };
@@ -2319,8 +2533,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const d=dEditing; if(!d) return;
     closeModal();
     if(!isCurrentMonth()){ cur={y:now.getFullYear(), m:now.getMonth()}; await load(); }
-    const i=fixedItems().find(x=>x.kind==="debt" && x.ref.id===d.id);
-    if(i && !i.paid) togglePaid(i);
+    const F=fixedItems();
+    const i=F.find(x=>x.kind==="debt" && x.ref.id===d.id) || F.find(x=>x.kind==="card" && x.parts.some(p=>p.debt.id===d.id));
+    if(i && !i.paid) openPay(i); else if(!i) toast("Belum ada tagihan untuk bulan ini");
   };
   confirmBtn($("dDel"), "Yakin hapus?", async ()=>{
     const id=dEditing.id; closeModal(); mutate([{op:"del", table:"debts", id}]); toast("Hutang dihapus");
