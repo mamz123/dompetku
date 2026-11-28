@@ -530,6 +530,16 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
 .bill-hs{font-size:12.5px;color:var(--muted);margin-top:2px}
 .bill-sec .row.paid{opacity:.62}
 .bill-h .sec-link{white-space:nowrap;flex:none}
+.cc-first{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:6px}
+.cc-first .tf-check{font-size:13.5px}
+.cc-first-src{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:8px 10px;font-weight:600;font-size:13.5px;color:var(--ink)}
+.cc-k-row{display:flex;align-items:center;gap:10px}
+.cc-k-lbl{font-size:13.5px;font-weight:600;color:var(--ink)}
+.cc-k{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-2)}
+.cc-k button{width:32px;height:30px;font-size:18px;font-weight:700;color:var(--ink)}
+.cc-k button:disabled{opacity:.35}
+.cc-k b{min-width:26px;text-align:center;font-size:15px}
+.cc-k-n{font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -766,6 +776,21 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       <input class="input mono" id="ccNIn" inputmode="numeric" placeholder="… x" aria-label="Lama cicilan lain (bulan)">
     </div>
     <label class="sel"><small>Tagihan dibayar dari</small><select id="ccPayer" aria-label="Pocket pembayar tagihan"></select></label>
+    <div class="cc-first" id="ccFirstBox">
+      <div class="cc-k-row"><span class="cc-k-lbl">Sudah dibayar</span>
+        <span class="cc-k"><button type="button" id="ccKMinus" aria-label="Kurangi">−</button><b id="ccK">0</b><button type="button" id="ccKPlus" aria-label="Tambah">+</button></span>
+        <span class="cc-k-n" id="ccKN">dari 1 cicilan</span></div>
+      <div id="ccPaidMore" hidden>
+        <select class="cc-first-src" id="ccFirstSrc" aria-label="Sumber dana cicilan yang sudah dibayar"></select>
+        <div id="ccStartBox">
+          <div class="cc-k-lbl" style="margin:8px 0 4px">Sisa cicilan mulai ditagih</div>
+          <div class="seg dstart" id="ccStart" style="margin-bottom:0">
+            <button type="button" data-off="0">Bulan ini<small></small></button>
+            <button type="button" data-off="1">Bulan depan<small></small></button>
+          </div>
+        </div>
+      </div>
+    </div>
     <p class="hint" id="ccHint"></p>
   </div>
   <button type="button" class="note-btn" id="noteBtn">+ Tambah catatan (opsional)</button>
@@ -1544,7 +1569,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const b=el("button","row"); b.type="button";
     if(t.kind==="debt"){ // cicilan kartu kredit: memotong saldo, tidak dihitung pengeluaran lagi
       const meta=el("div","meta");
-      meta.append(el("div","n", t.note || "Cicilan kartu kredit"), subLine(["Bayar kartu", walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
+      meta.append(el("div","n", t.note || "Cicilan kartu kredit"), subLine(["Bayar kartu", t.wallet ? walletName(t.wallet) : "di luar pocket", relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
       b.append(icEl(t.note||"Kartu","💳"), meta, el("div","amt num money tf","⇄ "+rp(t.amount)));
       b.onclick=()=>openTx(t); return b;
     }
@@ -2061,7 +2086,10 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   }
   // ---------------- bayar pakai kartu kredit: jadi cicilan mulai bulan depan ----------------
   const TENORS=[1,3,6,12];
-  let ccN=1, ccPayer="";
+  let ccN=1, ccPayer="", ccPaidK=0, ccStartOff=1, ccFirstSrc="";
+  const monthKeyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+  const curKeyNow = () => monthKeyOf(now), nextKeyNow = () => monthKeyOf(new Date(now.getFullYear(), now.getMonth()+1, 1)), prevKeyNow = () => monthKeyOf(new Date(now.getFullYear(), now.getMonth()-1, 1));
+  const dueIn = (key, day) => { const [y,m]=key.split("-").map(Number); return new Date(y, m-1, Math.min(day, new Date(y,m,0).getDate())); };
   const isCard = id => { const w=wallets.find(x=>x.id===id); return !!w && w.type==="credit"; };
   const ccDebtOf = t => t && t.debt ? debts.find(d=>d.id===t.debt) || null : null;
   const ccTenorTxt = t => { const d=ccDebtOf(t); return d ? (d.tenor>1 ? ` · cicil ${d.tenor}x` : " · bayar penuh") : ""; };
@@ -2085,18 +2113,42 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     if(!payers().some(w=>w.id===ccPayer)) ccPayer = payers()[0] ? payers()[0].id : "";
     sel.value=ccPayer;
     const h=$("ccHint"); h.replaceChildren();
+    // sudah dibayar berapa dari berapa cicilan?
+    ccPaidK=Math.max(0, Math.min(ccPaidK, ccN));
+    $("ccFirstBox").hidden = locked;
+    $("ccK").textContent = ccPaidK; $("ccKN").textContent = `dari ${ccN} cicilan`;
+    $("ccKMinus").disabled = ccPaidK<=0; $("ccKPlus").disabled = ccPaidK>=ccN;
+    const fs=$("ccFirstSrc"); fs.replaceChildren(); $("ccPaidMore").hidden = !ccPaidK;
+    payers().forEach(w=>{ const o=el("option",null,`${wType(w.type)[2]} ${w.name} · ${shortNoRp(w.balance)}`); o.value=w.id; fs.append(o); });
+    const out=el("option",null,"🚫 Di luar pocket (tidak memotong saldo)"); out.value="__out"; fs.append(out);
+    if(ccFirstSrc!=="__out" && !payers().some(w=>w.id===ccFirstSrc)) ccFirstSrc = "__out";
+    fs.value=ccFirstSrc;
+    const sb=$("ccStartBox"); sb.hidden = !ccPaidK || ccPaidK>=ccN;
+    const cardW=wallets.find(w=>w.id===sheetWallet), dueD=(cardW && cardW.dueDay) || Number(($("fDate").value||isoToday()).slice(8,10)) || 1;
+    document.querySelectorAll("#ccStart button").forEach(b=>{ const off=Number(b.dataset.off); b.classList.toggle("on", off===ccStartOff);
+      const d=dueIn(off?nextKeyNow():curKeyNow(), dueD); b.querySelector("small").textContent=`${d.getDate()} ${MSHORT[d.getMonth()]}`; });
     const card=wallets.find(w=>w.id===sheetWallet), amount=parseAmt($("fAmount").value), date=$("fDate").value||isoToday();
     if(!payers().length){ h.append(colored("Tambahkan pocket bank atau e-wallet dulu untuk membayar tagihan kartu.","r")); return; }
     if(locked){ h.append(colored(`Sudah ${old.paidCount} cicilan dibayar, nominal dan lama cicilan tidak bisa diubah di sini.`,"a")); return; }
     if(!amount){ h.textContent="Isi nominal untuk melihat jadwal tagihannya."; return; }
     const pl=ccPlan(amount,date,card), when=`${pl.first.getDate()} ${MSHORT[pl.first.getMonth()]} ${pl.first.getFullYear()}`;
-    h.append(ccN===1 ? `Ditagih penuh ${rp(amount)} pada ${when}.` : `Ditagih mulai ${when}: ${rp(pl.inst)}/bulan × ${ccN}.`,
-      el("br"), "Masuk budget hari ini. Saldo pocket baru terpotong saat tagihannya dibayar di Tagihan.");
+    if(ccPaidK){
+      const src = ccFirstSrc==="__out" ? "di luar pocket" : "dari "+(walletName(ccFirstSrc)||"pocket");
+      const paidAmt=Math.min(ccPaidK*pl.inst, amount), rest=ccN-ccPaidK, sd=dueIn(ccStartOff?nextKeyNow():curKeyNow(), pl.due);
+      h.append(`${ccPaidK} dari ${ccN} cicilan (${rp(paidAmt)}) tercatat lunas ${src}.`, el("br"),
+        rest ? `Sisa ${rest}× ${rp(pl.inst)} (total ${rp(amount-paidAmt)}) ditagih mulai ${sd.getDate()} ${MSHORT[sd.getMonth()]} ${sd.getFullYear()}.` : "Sudah lunas semua, tidak ada tagihan lagi.");
+      if(rest && sd < new Date(now.getFullYear(),now.getMonth(),now.getDate())) h.append(el("br"), colored("Tanggal ini sudah lewat, cicilan bulan ini langsung tercatat terlambat.","a"));
+    } else h.append(ccN===1 ? `Ditagih penuh ${rp(amount)} pada ${when}.` : `Ditagih mulai ${when}: ${rp(pl.inst)}/bulan × ${ccN}.`);
+    h.append(el("br"), date===isoToday() ? "Belanjanya masuk pengeluaran & budget hari ini." : `Belanjanya masuk pengeluaran & budget tanggal ${fmtDay(date)}.`);
     if(card && !card.dueDay) h.append(el("br"), colored(`Tanggal jatuh tempo ${card.name} belum diatur, sementara pakai tgl ${pl.due}.`,"a"));
   }
   $("ccTenor").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b||b.disabled) return; ccN=Number(b.dataset.n); updateCC(); });
   $("ccNIn").addEventListener("input", e=>{ const v=String(e.target.value).replace(/[^\d]/g,"").slice(0,2); e.target.value=v; const n=Number(v); if(n>=1){ ccN=Math.min(n,36); updateCC(); } });
-  $("ccPayer").addEventListener("change", e=>{ ccPayer=e.target.value; });
+  $("ccPayer").addEventListener("change", e=>{ ccPayer=e.target.value; updateCC(); });
+  $("ccKMinus").onclick=()=>{ ccPaidK=Math.max(0,ccPaidK-1); updateCC(); };
+  $("ccKPlus").onclick=()=>{ ccPaidK=Math.min(ccN,ccPaidK+1); updateCC(); };
+  $("ccStart").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; ccStartOff=Number(b.dataset.off); updateCC(); });
+  $("ccFirstSrc").addEventListener("change", e=>{ ccFirstSrc=e.target.value; updateCC(); });
   function updateSaveLabel(){ const a=parseAmt($("fAmount").value); $("saveBtn").textContent = a ? `Simpan · ${rp(a)}` : "Simpan"; }
   $("fWallet").onchange = e => { sheetWallet = e.target.value; updateCC(); };
   $("noteBtn").onclick = () => { $("noteBtn").hidden=true; $("fNote").hidden=false; $("fNote").focus(); };
@@ -2126,7 +2178,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     $("fDate").value = t ? t.date : (isCurrentMonth() ? isoToday() : `${cur.y}-${pad(cur.m+1)}-01`);
     $("fNote").value = t ? t.note : "";
     $("fNote").hidden = !(t && t.note); $("noteBtn").hidden = !$("fNote").hidden;
-    const od=ccDebtOf(t); ccN = od ? (od.tenor||1) : 1;
+    const od=ccDebtOf(t); ccN = od ? (od.tenor||1) : 1; ccPaidK=0; ccStartOff=1; ccFirstSrc="";
     ccPayer = od ? od.wallet : (store.get("dk.ccPayer") || defaultWallet());
     updateCC();
     updateSaveLabel();
@@ -2154,7 +2206,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     // kartu kredit → hutang cicilan mulai bulan depan
     const extra=[], old=ccDebtOf(editing), cc = x.kind==="daily" && x.type==="expense" && isCard(x.wallet);
     if(old && old.paidCount>0 && (!cc || amount!==editing.amount || ccN!==old.tenor || x.wallet!==old.card)){ toast(`Sudah ada cicilan dibayar. Ubah lewat halaman Hutang atau batalkan pembayarannya dulu.`,true); return; }
-    let ccMsg="";
+    let ccMsg=""; const firstDelta={};
     if(cc){
       if(!ccPayer){ toast("Tambahkan pocket untuk membayar tagihan kartu",true); return; }
       const card=wallets.find(w=>w.id===x.wallet), pl=ccPlan(amount,date,card);
@@ -2165,8 +2217,20 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
         dueDay: keep ? old.dueDay : pl.due, wallet:ccPayer, startMonth: keep ? old.startMonth : pl.start, card:card.id, src:x.id}});
       store.set("dk.ccPayer", ccPayer);
       ccMsg = `💳 Tagihan ${card.name} mulai ${pl.first.getDate()} ${MSHORT[pl.first.getMonth()]}` + (ccN>1?` · ${rpShort(pl.inst)}×${ccN}`:"");
+      if(ccPaidK && !keep){ // sudah dibayar k dari N cicilan (dari pocket atau di luar pocket); sisanya ditagih
+        const k=Math.min(ccPaidK,ccN), payId=uid(), src = ccFirstSrc==="__out" ? "" : ccFirstSrc, row=extra[extra.length-1].row;
+        const paidAmt=Math.min(k*pl.inst, amount), cur0=curKeyNow(), thisMonth = k>=ccN || ccStartOff===1;
+        const logKey = thisMonth ? cur0 : prevKeyNow(); // bulan ini lunas kalau sisanya mulai bulan depan
+        row.paidCount=k; row.paidLog=logAdd("",logKey,payId); row.startMonth = ccStartOff===1 ? nextKeyNow() : cur0;
+        const payDate0 = date.slice(0,7)===cur0 ? date : isoToday();
+        extra.push({op:"putTx", tx:{id:payId, by:x.by, type:"transfer", kind:"debt", amount:paidAmt, date:payDate0, category:DEBT_CAT,
+          note:`Cicilan ${card.name} · ${x.note||x.category} ke-${k>1?"1–"+k:"1"}`.slice(0,120), wallet:src, to:""}});
+        if(src) addDelta(firstDelta, src, -paidAmt);
+        const sd=dueIn(row.startMonth, row.dueDay);
+        ccMsg = k>=ccN ? "💳 Tercatat lunas semua" : `💳 ${k}/${ccN} lunas · sisa ${ccN-k}× mulai ${sd.getDate()} ${MSHORT[sd.getMonth()]}`;
+      }
     } else { x.debt=""; if(old) extra.push({op:"del", table:"debts", id:old.id}); }
-    const deltas={}; if(editing) mergeDeltas(deltas, effects(editing), -1); mergeDeltas(deltas, effects(x));
+    const deltas={}; if(editing) mergeDeltas(deltas, effects(editing), -1); mergeDeltas(deltas, effects(x)); mergeDeltas(deltas, firstDelta);
     if(x.wallet && !cc) store.set("dk.wallet", x.wallet);
     const wasEditing = !!editing;
     const ops=[{op:"putTx", tx:x}, ...walletOps(deltas), ...extra];
@@ -2182,7 +2246,17 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const t=editing; if(!t) return;
     const deltas=mergeDeltas({}, effects(t), -1);
     const ops=[{op:"delTx", id:t.id}, ...walletOps(deltas)];
-    const cd=ccDebtOf(t); if(cd) ops.push({op:"del", table:"debts", id:cd.id}); // cicilan kartunya ikut dihapus
+    const cd=ccDebtOf(t);
+    if(cd){ // cicilan kartunya ikut dihapus, termasuk pembayaran yang hanya untuk cicilan ini
+      ops.push({op:"del", table:"debts", id:cd.id});
+      const back={};
+      logParse(cd.paidLog).forEach(([,pid])=>{
+        const pt=allTx().find(x=>x.id===pid); if(!pt) return;
+        const shared = debts.some(d=>d.id!==cd.id && logParse(d.paidLog).some(([,v])=>v===pid));
+        if(!shared){ ops.push({op:"delTx", id:pid}); mergeDeltas(back, effects(pt), -1); }
+      });
+      ops.push(...walletOps(back));
+    }
     if(t.kind==="debt"){ // keep the debt count in step
       debts.filter(d=>logParse(d.paidLog).some(([,v])=>v===t.id)).forEach(d=>{
         const m=logParse(d.paidLog).find(([,v])=>v===t.id)[0]; ops.push({op:"put", table:"debts", row:{...d, paidCount:Math.max(0,d.paidCount-1), paidLog:logRemove(d.paidLog,m,t.id)}}); });
