@@ -540,6 +540,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
 .cc-k button:disabled{opacity:.35}
 .cc-k b{min-width:26px;text-align:center;font-size:15px}
 .cc-k-n{font-size:13px;color:var(--muted)}
+#fixedList .row .s{white-space:normal;overflow:visible;text-overflow:clip}
 </style>
 </head>
 <body>
@@ -952,6 +953,9 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   <input class="input mono" id="fxDue" inputmode="numeric" placeholder="1–31" style="margin-bottom:12px">
   <div class="field-lbl">Dibayar dari pocket</div>
   <div class="wchips" id="fxWallets"></div>
+  <div class="field-lbl">Masuk ke budget</div>
+  <div class="wchips" id="fxCats" style="margin-bottom:6px"></div>
+  <p class="hint" id="fxCatHint" style="margin:0 2px 12px"></p>
   <div class="sheet-actions">
     <button type="button" class="btn danger" id="fxDel" hidden>Hapus</button>
     <button type="submit" class="btn primary" id="fxSave">Simpan</button>
@@ -1091,7 +1095,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   const iType = t => INV_TYPES.find(x=>x[0]===t) || INV_TYPES[6];
   const normInvest = v => ({id:String(v.id), name:String(v.name||"Investasi"), type:iType(v.type)[0], cost:Number(v.cost)||0, value:Number(v.value)||0});
   const normFixed = f => ({id:String(f.id), name:String(f.name||"Tagihan"), amount:Number(f.amount)||0,
-    dueDay:Number(f.dueDay)||0, wallet:String(f.wallet||""), paidLog:String(f.paidLog||"")});
+    dueDay:Number(f.dueDay)||0, wallet:String(f.wallet||""), paidLog:String(f.paidLog||""), cat:String(f.cat||"")});
 
   // ---------------- backends ----------------
   async function sheetApi(action, payload){
@@ -1182,7 +1186,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     wallets: w => ({name:String(w.name).slice(0,40), type:w.type, balance:Number(w.balance)||0, dueDay:Number(w.dueDay)||0}),
     debts: d => ({name:String(d.name).slice(0,40), lender:String(d.lender||"").slice(0,40), total:d.total, installment:d.installment,
         tenor:d.tenor, paidCount:d.paidCount, dueDay:d.dueDay, note:String(d.note||"").slice(0,120), wallet:String(d.wallet||""), paidLog:String(d.paidLog||""), startMonth:String(d.startMonth||""), card:String(d.card||""), src:String(d.src||"")}),
-    fixed: f => ({name:String(f.name).slice(0,40), amount:f.amount, dueDay:f.dueDay, wallet:String(f.wallet||""), paidLog:String(f.paidLog||"")})
+    fixed: f => ({name:String(f.name).slice(0,40), amount:f.amount, dueDay:f.dueDay, wallet:String(f.wallet||""), paidLog:String(f.paidLog||""), cat:String(f.cat||"").slice(0,40)})
   };
   const claudeApi = {
     async commit(ops, month){
@@ -1492,7 +1496,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const M = monthKey();
     const txIds = new Set(txs.map(t=>t.id));
     const paidId = s => { const id=logGet(s,M); return id && txIds.has(id) ? id : ""; };
-    const items = fixed.map(f=>({kind:"fixed", ref:f, name:f.name, amount:f.amount, dueDay:f.dueDay, wallet:f.wallet, txId:paidId(f.paidLog)}));
+    const items = fixed.map(f=>{ const txId=paidId(f.paidLog), t=txId && txs.find(x=>x.id===txId);
+      return {kind:"fixed", ref:f, name:f.name, amount: t ? t.amount : f.amount, dueDay:f.dueDay, wallet:f.wallet, txId}; });
     const groups={};
     debts.forEach(d=>{
       const s=debtStats(d), txId=paidId(d.paidLog);
@@ -1513,9 +1518,11 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     items.forEach(i=>{ i.paid=!!i.txId; });
     return items.sort((a,b)=>(a.paid-b.paid) || ((a.dueDay||99)-(b.dueDay||99)));
   }
+  const fixedCat = f => { const c = f && f.cat ? resolveCat(f.cat) : ""; return c && Object.prototype.hasOwnProperty.call(budgets,c) ? c : ""; };
+  const countsInBudget = t => t.type==="expense" && (t.kind==="daily" || (t.kind==="fixed" && t.category!==FIXED_CAT));
   function budgetStatus(){
     const byCat={};
-    txs.forEach(t=>{ if(t.type==="expense" && t.kind==="daily") byCat[t.category]=(byCat[t.category]||0)+t.amount; });
+    txs.forEach(t=>{ if(countsInBudget(t)) byCat[t.category]=(byCat[t.category]||0)+t.amount; });
     const rows = Object.keys(budgets).map(c=>{ const b=budgets[c], s=byCat[c]||0, rem=b? (b-s)/b : 1; return {c,b,s,rem,level: b ? (rem<RED_PCT?"red":rem<=AMBER_PCT?"amb":"ok") : "ok"}; });
     Object.keys(byCat).forEach(c=>{ if(!(c in budgets)) rows.push({c,b:0,s:byCat[c],rem:1,level:"none"}); });
     const budget = Object.values(budgets).reduce((a,b)=>a+b,0);
@@ -1558,7 +1565,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const b=el("button","row"); b.type="button";
     const meta=el("div","meta");
     meta.append(el("div","n", t.note || t.category),
-      subLine([t.kind==="daily"?t.category:(t.kind==="fixed"?"Tagihan":"Cicilan"), t.debt ? "💳 "+(walletName(t.wallet)||"Kartu kredit")+ccTenorTxt(t) : walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
+      subLine([t.kind==="daily"?t.category:(t.kind==="fixed"?(t.category!==FIXED_CAT?"Tagihan · "+t.category:"Tagihan"):"Cicilan"), t.debt ? "💳 "+(walletName(t.wallet)||"Kartu kredit")+ccTenorTxt(t) : walletName(t.wallet), relDay(t.date), (HOUSE && t.by) ? "oleh "+t.by : ""]));
     const icon = t.kind==="fixed" ? icEl(t.note||t.category, fixedIcon(t.note)) : icEl(t.category);
     b.append(icon, meta, el("div",`amt num money ${t.type==="income"?"inc":""}`, (t.type==="income"?"+":"−")+rp(t.amount)));
     const parent = /-fee$/.test(t.id) ? allTx().find(x=>x.id===t.id.slice(0,-4) && x.type==="transfer") : null;
@@ -1828,7 +1835,8 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     const n=el("div","n"); n.append(i.name); if(i.kind==="debt") n.append(el("span","tag",`${Math.min(i.ref.paidCount+(i.paid?0:1), i.ref.tenor||99)}/${i.ref.tenor||"?"}`));
     if(i.kind==="card") n.append(el("span","tag",`${i.parts.length} cicilan`));
     const d=dueInfo(i);
-    meta.append(n, subLine([strong(rp(i.amount)), i.paid ? colored("lunas ✓","g") : (d ? colored(d.text,d.cls) : ""), walletName(i.wallet)]));
+    const bc = i.kind==="fixed" ? fixedCat(i.ref) : "";
+    meta.append(n, subLine([strong(rp(i.amount)), i.paid ? colored("lunas ✓","g") : (d ? colored(d.text,d.cls) : ""), walletName(i.wallet), bc ? "📊 "+bc : ""]));
     meta.style.cursor="pointer"; meta.onclick=()=> i.kind==="fixed" ? openFixed(i.ref) : i.kind==="card" ? openPay(i, true) : openDebt(i.ref);
     const btn=el("button", i.paid?"pay ghost":"pay", i.paid?"Batal":"Bayar"); btn.type="button";
     btn.setAttribute("aria-label", (i.paid?"Batalkan pembayaran ":"Bayar ")+i.name);
@@ -1986,7 +1994,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
   function openCatDetail(c){ bdCat=c; renderCatDetail(); openModal("bdsheet"); }
   function renderCatDetail(){
     const c=bdCat; if(c==null) return;
-    const list=txs.filter(t=>t.type==="expense" && t.kind==="daily" && t.category===c);
+    const list=txs.filter(t=>countsInBudget(t) && t.category===c);
     const spent=list.reduce((a,t)=>a+t.amount,0), b=budgets[c]||0;
     const ic=$("bdIc"), i=iconFor(c); ic.textContent=i.emoji; ic.style.background=i.bg;
     $("bdName").textContent=c;
@@ -2282,7 +2290,7 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
       const debt=i.kind==="debt", viaCard = debt && i.ref.card;
       const n = debt ? `Cicilan ${i.name} ke-${i.ref.paidCount+1}` : i.name;
       ops.push({op:"putTx", tx:{id, by:myName(), type: viaCard ? "transfer" : "expense", kind:i.kind, amount, date,
-        category: debt?DEBT_CAT:FIXED_CAT, note:n.slice(0,120), wallet, to:""}});
+        category: debt ? DEBT_CAT : (fixedCat(i.ref) || FIXED_CAT), note:n.slice(0,120), wallet, to:""}});
       ops.push({op:"put", table: debt?"debts":"fixed", row: debt ? {...i.ref, wallet, paidCount:i.ref.paidCount+1, paidLog:logAdd(i.ref.paidLog,M,id)} : {...i.ref, wallet, paidLog:logAdd(i.ref.paidLog,M,id)}});
     }
     ops.push(...walletOps({[wallet]: -amount}));
@@ -2512,17 +2520,27 @@ body.saving::before{background:linear-gradient(90deg,transparent,var(--lime),tra
     $("fxDue").value = f && f.dueDay ? f.dueDay : "";
     fWallet = f ? f.wallet : defaultWallet();
     walletChips($("fxWallets"), fWallet, id=>fWallet=id);
+    fCat = f ? fixedCat(f) : ""; renderFxCats();
     $("fxDel").hidden = !f; resetConfirm($("fxDel"),"Hapus");
     openModal("fsheet");
   }
   $("addFixedBtn").onclick=()=>openFixed();
+  let fCat="";
+  function renderFxCats(){
+    const box=$("fxCats"); box.replaceChildren();
+    [["", "Tidak masuk budget", "🚫"]].concat(Object.keys(budgets).map(c=>[c, c, iconFor(c).emoji])).forEach(([k,label,emo])=>{
+      const c=el("button","chip"+(k===fCat?" on":""), `${emo} ${label}`); c.type="button";
+      c.onclick=()=>{ fCat=k; renderFxCats(); }; box.append(c);
+    });
+    $("fxCatHint").textContent = fCat ? `Saat dibayar, tagihan ini dihitung ke budget ${fCat} bulan itu.` : "Tagihan ini tidak mengurangi budget kategori mana pun.";
+  }
   moneyInput($("fxAmt")); dayInput($("fxDue"));
   $("fsheet").addEventListener("submit", async e=>{
     e.preventDefault();
     const name=$("fxName").value.trim(), amount=parseAmt($("fxAmt").value), dueDay=Math.min(31,parseAmt($("fxDue").value));
     if(!name){ toast("Isi nama",true); return; }
     if(!amount){ toast("Isi nominal",true); return; }
-    const row={paidLog:"", ...(fEditing||{}), id:fEditing?fEditing.id:uid(), name, amount, dueDay, wallet:fWallet};
+    const row={paidLog:"", ...(fEditing||{}), id:fEditing?fEditing.id:uid(), name, amount, dueDay, wallet:fWallet, cat:fCat};
     closeModal(); mutate([{op:"put", table:"fixed", row}]); toast(fEditing?"Diperbarui":"Pengeluaran tetap ditambahkan");
   });
   confirmBtn($("fxDel"), "Yakin hapus?", async ()=>{
